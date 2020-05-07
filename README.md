@@ -2,7 +2,7 @@
 ##SMU Quantifying the World DS7333
 
 Jeremy Otsap - jotsap@mail.smu.edu
-
+Michael Catalano - mcatalano@smu.edu
 
 
 
