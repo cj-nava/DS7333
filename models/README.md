@@ -1,4 +1,5 @@
 ## Model Files
   
 **Unit 1**  
-MSDS_WEEK_1.ipynb
+MSDS_WEEK_1.ipynb  
+JeremyDataScratch.R
