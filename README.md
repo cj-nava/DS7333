@@ -4,6 +4,7 @@
 Jeremy Otsap - jotsap@mail.smu.edu  
 Christian Nava - cjnava@mail.smu.edu  
 Michael Catalano - mcatalano@smu.edu
+
 Martin Garcia - mgarcia@smu.edu
 
 **DIRECTORY**  
