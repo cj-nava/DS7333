@@ -1,0 +1,107 @@
+---
+title: "RTLS_Case Study"
+date: "5/15/2020"
+output: html_document
+---
+
+
+#load required libraries
+```{r}
+
+library(tidyverse)
+library(magrittr)
+library(lattice)
+
+```
+
+
+#ProcessLine strips the values separating our data
+
+```{r}
+
+processLine = function(x)
+{
+tokens = strsplit(x, "[;=,]")[[1]] #strip semicolon, equal and comma of first row
+if (length(tokens) == 10)
+    return(NULL)
+tmp = matrix(tokens[ - (1:10) ], ncol= 4, byrow = TRUE) #pull the last elements except the scanning device (first ten tokens)
+cbind(matrix(tokens[c(2, 4, 6:8, 10)], nrow(tmp), 6, #column bind the scanning device data with our signal data above
+byrow = TRUE), tmp)
+}
+```
+
+#roundOrientation rounds our angles to the closest 45th angle
+```{r}
+roundOrientation = function(angles) { 
+  refs = seq(0, by=45, length=9) # this creates 0  45  90 135 180 225 270 315 360
+  q= sapply(angles, function(o) which.min(abs(0-refs))) #sapply returns a vector with the minimum absolute value
+  c(refs[1:8],0) [q]
+}
+
+```
+
+```{r}
+#Create a function the prep the data
+readData = function(filename,  macs) #filename can be offline or online, macs filter our data to our macs of interest
+
+  {
+    txt = readLines(filename)
+    lines = txt[ substr(txt, 1, 1) != "#" ]
+    tmp = lapply(lines, processLine)
+    df = as.data.frame(do.call("rbind", tmp), 
+                            stringsAsFactors= FALSE) 
+    
+    names(df) = c("time", "scanMac", "posX", "posY", "posZ", "orientation", "mac", "signal", "channel", "type")
+    
+     # keep only signals from access points
+    df = df[ df$type == "3", ]
+    
+    # drop scanMac, posZ, channel, and type - no info in them
+    dropVars = c("scanMac", "posZ", "channel", "type")
+    df = df[ , !( names(df) %in% dropVars ) ]
+    
+    # drop more unwanted access points
+    df = df[ df$mac %in% macs, ]
+    
+    # convert numeric values
+    numVars = c("time", "posX", "posY", "orientation", "signal")
+    df[ numVars ] = lapply(df[ numVars ], as.numeric)
+
+    # convert time to POSIX
+    df$time = df$time/1000
+    class(df$time) = c("POSIXt", "POSIXct")
+    
+    # round orientations to nearest 45
+    df$angle = roundOrientation(df$orientation)
+    
+    #Combine all possible X Y combinations
+    df$posXY = paste(df$posX, df$posY, sep = "-")
+    #Reshape from long to short
+    keepVars = c("posXY", "posX","posY", "orientation", "angle") 
+    byLoc = with(df,
+                 by(df, list(posXY),
+                    function(x) 
+                      { ans = x[1, keepVars]
+                      avgSS = tapply(x$signal, x$mac, mean) #tapply breakdown (vector of our signals, broken down by mac address,  mean)
+                      y = matrix(avgSS, nrow = 1, ncol = 7, 
+                                 dimnames = list(ans$posXY, names(avgSS))) 
+                      cbind(ans, y) 
+                      }))
+    dfSummary = do.call("rbind", byLoc)
+    return(dfSummary)
+  }
+
+
+
+```
+
+```{r}
+offline = readData(filename = "Data/offline.final.trace.txt", 
+                   macs  = c("00:0f:a3:39:e1:c0", "00:0f:a3:39:dd:cd", "00:14:bf:b1:97:8a",
+                       "00:14:bf:3b:c7:c6", "00:14:bf:b1:97:90", "00:14:bf:b1:97:8d",
+                       "00:14:bf:b1:97:81"))
+```
+
+```{r}
+online = readData(filename = "Data/online.final.trace.txt")
+```
