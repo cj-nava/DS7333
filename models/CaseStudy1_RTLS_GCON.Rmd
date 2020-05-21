@@ -2,7 +2,9 @@
 title: "RTLS Case Study"
 author: "Martin Garcia, Michael Catalano, Jeremy Otsap, Christian Nava"
 date: "5/19/2020"
-output: html_document
+output: 
+    html_document:
+        keep_md: true
 ---
 
 ```{r,echo=FALSE}
