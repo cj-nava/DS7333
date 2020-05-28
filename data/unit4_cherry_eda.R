@@ -217,8 +217,7 @@ sapply(age, function(x) sum(is.na(x)))
 # can update the extractVariables function
 
 extractVariables = 
-  function(file, varNames =c("name", "home", "ag", "gun",
-                             "net", "time"))
+  function(file, varNames =c("name", "home", "ag", "gun", "net", "time"))
   {
     
     # Find the index of the row with =s
@@ -324,6 +323,11 @@ createDf = function(Res, year, sex) {
 
 
 
+### DEALING W/ 2006 NIGHTMARE
+### IN SUMMARY: the extractVariables() would aggregate hometown and time columns due to the ==== spacer row not aligning properly
+### Fixing this issue allowed the data to import properly, else all 5432 lines will import incorrectly
+
+
 # gets every line that starts with ===
 separatorIdx <- grep("^===", womenFiles[["2006"]])
 
@@ -334,8 +338,7 @@ separatorRow <- womenFiles[["2006"]][separatorIdx]
 paste(substring(separatorRow, 1, 63), " ", substring(separatorRow, 65, nchar(separatorRow)), sep = "") -> separatorRowX
 
 # replaces the === with the separator row
-womenFiles[["2006"]][separatorIdx] -> separatorRowX
-
+womenFiles[["2006"]][separatorIdx] <- separatorRowX
 
 
 
@@ -362,8 +365,12 @@ allWomen[order(allWomen$year, allWomen$runTime),] -> allWomen
 
 
 
+
 # we see 23 runners with an age of 0
 count(allWomen[allWomen$age == 0, ])
+
+# details
+allWomen[allWomen$age == 0, ]
 
 # removing rows with 0 / NA's in age column
 allWomen <- allWomen[allWomen$age != 0, ]
@@ -381,55 +388,20 @@ allWomen %>% group_by(year) %>% summarise(ag_mean = mean(age, na.rm = T),
 
 
 
+### GRAPHICS ###
 
 
+# age distribution for all years
+allWomen %>% ggplot() + geom_density(aes(x = age), alpha = 0.7) + ggtitle("Cherry Blossom Women - Age")
 
 
+# womens run time for all years
+allWomen %>% ggplot() + geom_density(aes(x = runTime), alpha = 0.7) + ggtitle("Cherry Blossom Women - Run Time")
 
 
+# womens average run time for all years
+allWomen %>% group_by(year) %>% summarise(`Average runTime` = mean(runTime, na.rm = T)) %>% ggplot() + geom_line(aes(x = year, y = `Average runTime`)) + ggtitle("Cherry Blossom Women Annual Run Time")
 
-
-# show NA values
-
-# we can see 5432 missing values for runTime
-aggr(allWomen, 
-     prop = FALSE, 
-     combined = TRUE, 
-     numbers = TRUE, 
-     sortVars = TRUE, 
-     sortCombs = TRUE)
-
-# validate missing values
-sum(is.na(allWomen$runTime))
-is.na(allWomen$runTime)
-allWomen[is.na(allWomen$runTime),]
-
-# the NA's count as 0 showing the same 5432
-count(allWomen[allWomen$runTime == 0, ])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# womens total attendance for all years
+allWomen %>% group_by(year) %>% summarise(Attendance = n()) %>% na.omit %>% ggplot() + geom_line(aes( x = year, y = Attendance)) + ggtitle("Cherry Blossom Women Total Attendance 1999-2012")
 
