@@ -355,7 +355,7 @@ head(womenDF)
 allWomen <- do.call(rbind, womenDF)
 
 
-
+allWomen[allWomen$year == '2006',] %>% head(,20)
 
 
 # sorting by year, then run times
@@ -404,4 +404,9 @@ allWomen %>% group_by(year) %>% summarise(`Average runTime` = mean(runTime, na.r
 
 # womens total attendance for all years
 allWomen %>% group_by(year) %>% summarise(Attendance = n()) %>% na.omit %>% ggplot() + geom_line(aes( x = year, y = Attendance)) + ggtitle("Cherry Blossom Women Total Attendance 1999-2012")
+
+# womens average run time by age
+allWomen %>% group_by(age) %>% summarise(`Average runTime` = mean(runTime, na.rm = T)) %>% ggplot() + geom_line(aes(x = age, y = `Average runTime`)) + ggtitle("Cherry Blossom Women Run Time By Age")
+
+
 
