@@ -1,0 +1,154 @@
+---
+title: "Spam & Ham Case Study"
+author: "Martin Garcia, Michael Catalano, Jeremy Otsap, Christian Nava"
+date: "5/20/2020"
+output: html_document
+---
+
+```{r}
+
+#saving directory where our data/emails are saved
+spamPath <- "C://Users//marti//OneDrive//Desktop//QTW//Case Study 3 - Spam Ham//Data//"
+
+#list folders within this directory
+list.dirs(spamPath, full.names =FALSE)
+
+```
+
+
+```{r}
+
+#list the files names within easy_ham folder
+head(list.files(path=paste(spamPath, "easy_ham", sep=.Platform$file.sep)))
+
+```
+
+```{r}
+
+#folder names within our directory
+dirNames = list.files(path=paste(spamPath, sep=.Platform$file.sep))
+
+dirNames #vector of length 5, one for each of our folders
+
+```
+
+
+
+# We need to learn to read all the files w/ readLines() function
+
+```{r}
+
+#We paste the spamPath + every folder name combination
+fullDirNames = paste(spamPath,dirNames,sep=.Platform$file.sep)
+
+fullDirNames #vector of length 5, with original directory + list of each of our folder names
+
+```
+
+
+```{r}
+
+#pull names of files within our easy_ham folder (fullDirNames[1] refers to first object in our vector) & read the first message
+fileNames = list.files(fullDirNames[1], full.names =TRUE) #
+
+fileNames[1] #pulls first object in our vector, this vector contains all the messages by name
+
+```
+
+We use readLines to pull the actual contents of our message.
+
+```{r}
+
+#read the first message in easy-ham
+msg = readLines(fileNames[1]) #returns vector 
+
+print(head(msg))
+
+```
+
+```{r}
+indx = c(1:5, 15, 27, 68, 69, 329, 404, 427, 516, 852, 971) 
+fn = list.files(fullDirNames[1], full.names = TRUE)[indx] 
+sampleEmail = sapply(fn, readLines)
+
+```
+
+
+# Splitting our email components
+
+* Header
+* Body
+* Attachments
+
+### Header and Body
+
+```{r}
+
+#The header and body are separated by an empty line
+
+easy_ham_files = list.files(fullDirNames[1], full.names = TRUE) #vector of our files
+easy_ham = sapply(easy_ham_files, readLines) #applies readLines function to our vector of files & returns vector of objects - emails
+
+head(easy_ham[[1]]) #first email in our easy_ham folder
+
+```
+
+### splitMessage() function - splits the email into header and body
+
+```{r}
+splitMessage = function(msg) {
+  splitPoint = match("", msg) #match returns location where first blank occurs
+  header = msg[1:(splitPoint-1)] #header is equal to firt line up to the splitPoint location not including
+  body = msg[ -(1:splitPoint) ] #body includes last line (-1, starts at end) up to splitPoint
+  return(list(header = header, body = body)) 
+  }
+
+```
+
+Split email samples into header and body components
+
+```{r}
+
+#split_easy_ham = lapply(easy_ham, splitMessage) #returns list of header & body
+sampleSplit = lapply(sampleEmail, splitMessage) #returns list of header & body
+
+#the individual header or body can be references through
+header = sampleSplit[[1]]$header #1st header of first email
+body =  sampleSplit[[1]]$body #1st body of first email
+
+```
+
+### Attachments
+
+The attachments are in email if Content-Type = Multipart.
+The attachment location can be found via a string string following BOUNDARY = "_string_"
+
+```{r}
+#locate the location of the "Content-Type"
+headerList = lapply(sampleSplit, function(msg) msg$header) #create list of all my headers
+head(headerList)
+```
+
+```{r}
+
+hasAttach = sapply(headerList, function(header) {
+  CTloc = grep("Content-Type", header) #looks string 'Content-Type' & returns location
+  if (length(CTloc) == 0) return(FALSE)  #if no string found returns zero return, which we suggest return NA, else default false
+  grepl("multi", tolower(header[CTloc])) #not all Content-Type has upper or lower case 'Multipart', changing to lower and if found return true
+  })
+
+```
+
+This next section focuses on finding where the attachment lies based on the BOUNDARY string.
+
+# Boundary function - 
+
+```{r}
+
+getBoundary = function(header) {
+  boundaryIdx = grep("boundary=", header) #pull index/location where string 'boundary=' lives
+  boundary = gsub(`"`, "", header[boundaryIdx])  # replace quotes with nothing
+  gsub(".*boundary= *([^;]*);?.*", "\\1", boundary)  
+  }
+
+```
