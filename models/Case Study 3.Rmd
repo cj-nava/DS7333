@@ -1,0 +1,101 @@
+---
+title: "Case Study 3 - Spam"
+author: "Martin Garcia, Michael Catalano, Jeremy Otsap, Christian Nava"
+date: "6/3/2020"
+output: html_document
+---
+
+## Required packages
+
+
+```{r}
+library(rpart)
+library(rpart.plot)
+library(RColorBrewer)
+library(rattle)
+
+```
+
+
+```{r}
+setwd("C:\\Users\\marti\\OneDrive\\Desktop\\QTW\\Weeks\\Week_5_Materials_2")
+
+load(file="data.Rda")
+
+str(emailDFrp)
+```
+
+# CART Model with Rpart Example without tuning or cross validation
+
+```{r}
+
+fit <- rpart(isSpam ~ .,
+             method="class", data=emailDFrp)
+
+#Decision Tree
+fancyRpartPlot(fit)
+
+
+#Confusion Matrix
+pred = predict(fit, type="class")
+table(pred, emailDFrp$isSpam)
+
+```
+
+# CART Model with hyper parameter tuning
+
+* minsplit - minimum number of observations in a node  required to attempts a split
+* minbucket  - minimum number of observations in any leaf
+* cp - complexity parameter creates threshold, helps with pruning - use plotcp()
+* maxcompete
+* maxsurrogate
+* xval - cross validation
+* maxdepth - depth of tree
+
+```{r}
+
+models <- list()
+ 
+hyper_grid <- expand.grid(
+    minsplit = c(10, 20, 100,1000),
+    minbucket = c(50,100,200,500),
+    max_depth = c(3, 5, 7, 10),
+    cp = c(.001,.01,.1),
+    xval = c(3,5)
+    
+)
+
+for(i in 1:nrow(hyper_grid)) {
+    
+    # create parameter list
+    params <- list(
+        minsplit = hyper_grid$minsplit[i],
+        minbucket = hyper_grid$minbucket[i],
+        max_depth = hyper_grid$max_depth[i],
+        cp = hyper_grid$cp[i],
+        xval = hyper_grid$xval[i]
+    )
+    
+    # reproducibility
+    set.seed(123)
+    
+    # train model
+    models[[i]] <- rpart(formual = isSpam ~ .,
+                         data=emailDFrp,
+                         method = "class",
+                         minsplit=minsplit,
+                         minbucket=minbucket,
+                         max_depth=max_depth,
+                         cp=cp,
+                         xval=xval)
+
+}
+
+```
+
+
+```{r}
+# Create an empty vector to store RMSE values
+rmse_values <- c()
+
+```
