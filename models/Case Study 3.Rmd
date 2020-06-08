@@ -5,44 +5,176 @@ date: "6/3/2020"
 output: html_document
 ---
 
-## Required packages
 
+
+
+
+### Required packages
 
 ```{r}
+
 library(rpart)
 library(rpart.plot)
 library(RColorBrewer)
 library(rattle)
-
+library(caret) # used for datapartition function & tuning
+library(tidyverse) # used to ggplot
+library(ROCR) #used for our ROC curve
 ```
 
 
 ```{r}
+
 setwd("C:\\Users\\marti\\OneDrive\\Desktop\\QTW\\Weeks\\Week_5_Materials_2")
 
 load(file="data.Rda")
 
 str(emailDFrp)
+
 ```
 
-# CART Model with Rpart Example without tuning or cross validation
+```{r}
+meanlist <- c("subBlanks","numRec","subQuesCt", "subExcCt")
+modelist <-  c("isYelling", "noHost","subSpamWords")
+
+sapply(emailDFrp, function(x) sum(is.na(x)))
+
+#dataOutput <- lapply(colnames(meanlist), function(x){emailDFrp(meanlist[x])})
+emailDFrp[meanlist] <- lapply(emailDFrp[meanlist], mean)
+
+emailDFrp[meanlist] <- lapply(emailDFrp)
+
+imputed_data <- emailDFrp %>%
+  mutate(subBlanks = ifelse(is.na(subBlanks), mean(subBlanks), subBlanks)
+        # numRec = ifelse(is.na(numRec), mean(numRec), numRec),
+        # subQuesCt = ifelse(is.na(subQuesCt), mean(subQuesCt), subQuesCt),
+        # subExcCt = ifelse(is.na(subExcCt), mean(subExcCt), subExcCt)
+         )
+
+sapply(imputed_data, function(x) sum(is.na(x)))
+
+emailDFrp$numRec <- lapply(emailDFrp$numRec, function(x) replace(x, is.na(x), mean(x, na.rm = TRUE)))
+
+```
+
+
+
+# CART Models
+
+## CART Model (Default hyperparameters)
+
+We set benchmarks for our final model by creating a "vanilla" model that trains a decision tree with the default parameters. This includes the hyperparameters below with their respective default values.
+
+* minsplit = 20
+* minbucket = round(minsplit/3)
+* cp = .01
+* xval = 10
+* maxdepth = 30
+
 
 ```{r}
 
 fit <- rpart(isSpam ~ .,
              method="class", data=emailDFrp)
 
+fit
+```
+
+
+
+```{r}
 #Decision Tree
 fancyRpartPlot(fit)
 
+```
+
+```{r}
 
 #Confusion Matrix
-pred = predict(fit, type="class")
-table(pred, emailDFrp$isSpam)
+
+#type argument class creates a vector of the sum of T and F
+pred_class= predict(fit, type="class")
+table(pred_class)
+
+#type argument pron creates a matrix with the probabilities of all the emails
+pred_prob = predict(fit, type="prob")
+head(pred_prob)
+```
+
+```{r}
+mytable <- table(pred_class, emailDFrp$isSpam)
+
+#variable importance
+var_imp <- data.frame(imp = fit$variable.importance)
+
+var_imp$myvariables <- var_imp
+var_imp$myvariables <- rownames(var_imp)
+
+accuracy <- sum(diag(mytable))/sum(mytable)
+
+print(mytable)
+print(accuracy)
+```
+
+True positive rates = TP / TP + FN (vertical)
+False Positive Rates = FP / FP + TN (horizontal)
+
+```{r}
+#ROC Curve 
+prob <- pred_prob[,2]
+head(prob)
+
+# Make a prediction object: pred
+pred <- prediction(probs, emailDFrp$isSpam)
+
+# Make a performance object: perf
+perf <- performance(pred, "tpr", "fpr")
+
+# Plot this curve
+plot(perf)
+
+# Make a performance object: perf
+perf <- performance(pred, "auc")
+
+# Print out the AUC
+print(perf@y.values[[1]])
+```
+
+```{r}
+
+var_imp_ss <-  var_imp %>% 
+    arrange(desc(imp)) %>%
+    top_n(n = 5, wt=imp)
+
+var_imp_plot <- ggplot(var_imp_ss, aes(x=reorder(myvariables, imp), y=imp, fill=myvariables)) +
+    geom_bar(stat="identity") +
+    coord_flip() 
+
+var_imp_plot
 
 ```
 
-# CART Model with hyper parameter tuning
+## CART Model with hyper parameter tuning
+
+We will tune our model by training on different hyperparameters and general observations through exploratory data analysis, which includes imputation and class imbalances.
+
+```{r}
+ggplot(emailDFrp, aes(x=factor(isSpam)))+
+  geom_bar(stat="count", width=0.7, fill=c("steelblue2","steelblue4"))+
+  theme_minimal()
+```
+
+```{r}
+sapply(emailDFrp, function(x) sum(is.na(x)))
+```
+
+```{r}
+test1 = preProcess(emailDFrp, method = "knnImpute")
+test1Result <- predict(test1, emailDFrp)
+
+countype <- emailDFrp %>%
+  count(isYelling)
+```
 
 * minsplit - minimum number of observations in a node  required to attempts a split
 * minbucket  - minimum number of observations in any leaf
@@ -52,15 +184,36 @@ table(pred, emailDFrp$isSpam)
 * xval - cross validation
 * maxdepth - depth of tree
 
+We create a training and test set to even though we will be doing cross validation. This is to test the accuracy assuming our test data is completely new.
+
+
+```{r}
+split_index <- createDataPartition(emailDFrp$isSpam, p=.8,list = FALSE, times=1)
+
+#4 Training and test sets
+training <- emailDFrp[ split_index,] #use index to refer to training set from our sample
+testing <- emailDFrp[-split_index,] #use index to refer to our test set from our sample
+
+```
+
+
+We approach our hyperparameters using a grid search which creates a grid of different combinations of hyperparameters. 
+
+# Rpart approach
+
+We try several combinations of hyperparameters by doing a grid approach. 
+
+This results in a list of several models.
+
 ```{r}
 
 models <- list()
  
 hyper_grid <- expand.grid(
-    minsplit = c(10, 20, 100,1000),
-    minbucket = c(50,100,200,500),
-    max_depth = c(3, 5, 7, 10),
-    cp = c(.001,.01,.1),
+    minsplit = c(100, 150, 250,500),
+    minbucket = c(100,200,400,500),
+    maxdepth = c(3, 5, 7, 10),
+    cp = c(.001,.01,.1,.3),
     xval = c(3,5)
     
 )
@@ -68,34 +221,172 @@ hyper_grid <- expand.grid(
 for(i in 1:nrow(hyper_grid)) {
     
     # create parameter list
-    params <- list(
-        minsplit = hyper_grid$minsplit[i],
-        minbucket = hyper_grid$minbucket[i],
-        max_depth = hyper_grid$max_depth[i],
-        cp = hyper_grid$cp[i],
+
+        minsplit = hyper_grid$minsplit[i]
+        minbucket = hyper_grid$minbucket[i]
+        maxdepth = hyper_grid$maxdepth[i]
+        cp = hyper_grid$cp[i]
         xval = hyper_grid$xval[i]
-    )
     
     # reproducibility
     set.seed(123)
     
     # train model
-    models[[i]] <- rpart(formual = isSpam ~ .,
-                         data=emailDFrp,
+    models[[i]] <- rpart(formula = isSpam ~ .,
+                         data=training,
                          method = "class",
                          minsplit=minsplit,
                          minbucket=minbucket,
-                         max_depth=max_depth,
+                         maxdepth=maxdepth,
                          cp=cp,
                          xval=xval)
 
 }
 
+models[[1]]
+
+```
+
+```{r}
+# function to get optimal cp
+get_cp <- function(x) {
+  min    <- which.min(x$cptable[, "xerror"])
+  cp <- x$cptable[min, "CP"] 
+}
+
+# function to get minimum error
+get_min_error <- function(x) {
+  min    <- which.min(x$cptable[, "xerror"])
+  xerror <- x$cptable[min, "xerror"] 
+}
+
+hyper_grid %>%
+  mutate(
+    cp    = purrr::map_dbl(models, get_cp),
+    error = purrr::map_dbl(models, get_min_error)
+    ) %>%
+  arrange(error) %>%
+  top_n(-5, wt = error)
+
+
+```
+
+
+
+
+# Caret Approach
+
+```{r}
+
+#train control used for sampling techniques
+train.control <- trainControl( 
+                           method = "cv",
+                           number = 5, ## 5-fold CV
+                           repeats = 3,## repeated three times
+                           # USE AUC
+                           summaryFunction = twoClassSummary, 
+                           classProbs = TRUE
+                           )
+
+# hyper parameter grid
+tune.gridcart <- expand.grid(maxdepth = c(3,5,7,10),
+                             minsplit = c(100,150,250,500),
+                             minbucket = c(100,200,400,500))
+
+rpartFit2 <- train(isSpam~., data=training, 
+                 method = "rpart2", 
+                 tuneGrid =tune.gridcart,
+                 trControl = train.control,
+                 metric = "Kappa"
+               )
+```
+We preview the structure of one of our decision trees. This tree the the result of a combination of hyperparameters.
+
+```{r}
+
+models[[1]] #preview one of our models
+
 ```
 
 
 ```{r}
-# Create an empty vector to store RMSE values
-rmse_values <- c()
+
+plotcp(models[[1]])
 
 ```
+
+
+```{r}
+
+printcp(models[[1]])
+```
+
+```{r}
+#The cross validation error rates and standard deviations are displayed in the columns xerror and xstd respectively.
+printcp(models[[1]])
+
+print(models[[1]])
+
+models[[1]]$cptable[which.min(models[[1]]$cptable[,"xerror"]),"CP"]
+```
+
+
+#Caret - method = Rpart - tuning cp
+
+```{r}
+
+# Create a trainControl object to control how the train function creates the model
+train_control <- trainControl(method = "cv",   # Use cross validation
+                              number = 5             # Use 10 partitions
+                              )             # Repeat 2 times
+
+# Set required parameters for the model type we are using**
+tune_grid = expand.grid(
+    cp = c(.001,.01,.1,.3,.5)
+    )
+
+
+# Use the train() function to create the model
+validated_tree <- train(isSpam ~ .,
+                        data=training,                 # Data set
+                        method="rpart",                     # Model type(decision tree)
+                        trControl= train_control,           # Model control options
+                        tuneGrid = tune_grid,
+                        na.action = na.pass)               # Required model parameters
+                       
+validated_tree         # View a summary of the model
+
+```
+
+## Caret - method=Rpart2 - tuning for maxdepth
+
+```{r}
+
+# Create a trainControl object to control how the train function creates the model
+train_control <- trainControl(method = "cv",   # Use cross validation
+                              number = 5             # Use 10 partitions
+                              )             # Repeat 2 times
+
+# Set required parameters for the model type we are using**
+tune_grid = expand.grid(
+    maxdepth = c(3:25)
+    )
+
+
+# Use the train() function to create the model
+validated_tree <- train(isSpam ~ .,
+                        data=training,                 # Data set
+                        method="rpart2",                     # Model type(decision tree)
+                        trControl= train_control,           # Model control options
+                        tuneGrid = tune_grid,
+                        na.action = na.pass)               # Required model parameters
+                         
+validated_tree         # View a summary of the model
+
+```
+
+# Performance Metrics
+
+* Kappa
+* ROC
+* Confusion Matrix
