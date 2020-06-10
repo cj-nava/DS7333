@@ -20,6 +20,8 @@ library(rattle)
 library(caret) # used for datapartition function & tuning
 library(tidyverse) # used to ggplot
 library(ROCR) #used for our ROC curve
+library(summarytools) # our EDA tool
+
 ```
 
 
@@ -30,38 +32,30 @@ setwd("C:\\Users\\marti\\OneDrive\\Desktop\\QTW\\Weeks\\Week_5_Materials_2")
 load(file="data.Rda")
 
 str(emailDFrp)
-
 ```
+
+We split are data to model a real world scenario of data we will train on and assume we have new data to test on. We will also do 5 fold cross validation on the test set.
 
 ```{r}
-meanlist <- c("subBlanks","numRec","subQuesCt", "subExcCt")
-modelist <-  c("isYelling", "noHost","subSpamWords")
+split_index <- createDataPartition(emailDFrp$isSpam, p=.8,list = FALSE, times=1)
 
-sapply(emailDFrp, function(x) sum(is.na(x)))
-
-#dataOutput <- lapply(colnames(meanlist), function(x){emailDFrp(meanlist[x])})
-emailDFrp[meanlist] <- lapply(emailDFrp[meanlist], mean)
-
-emailDFrp[meanlist] <- lapply(emailDFrp)
-
-imputed_data <- emailDFrp %>%
-  mutate(subBlanks = ifelse(is.na(subBlanks), mean(subBlanks), subBlanks)
-        # numRec = ifelse(is.na(numRec), mean(numRec), numRec),
-        # subQuesCt = ifelse(is.na(subQuesCt), mean(subQuesCt), subQuesCt),
-        # subExcCt = ifelse(is.na(subExcCt), mean(subExcCt), subExcCt)
-         )
-
-sapply(imputed_data, function(x) sum(is.na(x)))
-
-emailDFrp$numRec <- lapply(emailDFrp$numRec, function(x) replace(x, is.na(x), mean(x, na.rm = TRUE)))
+#4 Training and test sets
+training <- emailDFrp[ split_index,] #use index to refer to training set from our sample
+testing <- emailDFrp[-split_index,] #use index to refer to our test set from our sample
 
 ```
 
+# Exploratory Data Analysis with summarytools
+
+```{r}
+view(dfSummary(emailDFrp, plain.ascii = FALSE, style = "grid", 
+          graph.magnif = 0.75, valid.col = FALSE))
+```
 
 
 # CART Models
 
-## CART Model (Default hyperparameters)
+### CART Model (Default hyperparameters)
 
 We set benchmarks for our final model by creating a "vanilla" model that trains a decision tree with the default parameters. This includes the hyperparameters below with their respective default values.
 
@@ -75,72 +69,58 @@ We set benchmarks for our final model by creating a "vanilla" model that trains 
 ```{r}
 
 fit <- rpart(isSpam ~ .,
-             method="class", data=emailDFrp)
+             method="class", data=training)
 
 fit
+
 ```
 
 
 
 ```{r}
+
 #Decision Tree
 fancyRpartPlot(fit)
 
 ```
 
-```{r}
+### Confusion Matrix & Accuracy
 
-#Confusion Matrix
+### Training Data
+
+```{r}
 
 #type argument class creates a vector of the sum of T and F
-pred_class= predict(fit, type="class")
-table(pred_class)
-
-#type argument pron creates a matrix with the probabilities of all the emails
-pred_prob = predict(fit, type="prob")
-head(pred_prob)
+predict_training= predict(fit, type="class")
+confusion_table<-table(training[,1],predict_training)
+confusion_table
+accuracy <- sum(diag(confusion_table))/sum(confusion_table)
+accuracy
 ```
+### Test Data
 
 ```{r}
-mytable <- table(pred_class, emailDFrp$isSpam)
+predict_test <- predict(fit, testing, type="class")
+confusion_table<- table(testing[,1],predict_test)
+confusion_table
+accuracy <- sum(diag(confusion_table))/sum(confusion_table)
+accuracy
+```
 
+Caret approach with our test set.
+```{r}
+caret_confusion <- confusionMatrix(data = predict_test, reference = testing[,1])
+caret_confusion
+```
+
+### Variable Importance
+
+```{r}
 #variable importance
 var_imp <- data.frame(imp = fit$variable.importance)
 
 var_imp$myvariables <- var_imp
 var_imp$myvariables <- rownames(var_imp)
-
-accuracy <- sum(diag(mytable))/sum(mytable)
-
-print(mytable)
-print(accuracy)
-```
-
-True positive rates = TP / TP + FN (vertical)
-False Positive Rates = FP / FP + TN (horizontal)
-
-```{r}
-#ROC Curve 
-prob <- pred_prob[,2]
-head(prob)
-
-# Make a prediction object: pred
-pred <- prediction(probs, emailDFrp$isSpam)
-
-# Make a performance object: perf
-perf <- performance(pred, "tpr", "fpr")
-
-# Plot this curve
-plot(perf)
-
-# Make a performance object: perf
-perf <- performance(pred, "auc")
-
-# Print out the AUC
-print(perf@y.values[[1]])
-```
-
-```{r}
 
 var_imp_ss <-  var_imp %>% 
     arrange(desc(imp)) %>%
@@ -154,7 +134,42 @@ var_imp_plot
 
 ```
 
-## CART Model with hyper parameter tuning
+### Simple tuning
+
+We do minor adjustments to our simple model by adjusting our complexity parameter.A high cp leads to a smaller tree and lower cp to larger tree.
+
+```{r}
+
+plotcp(fit) # visualize cross-validation results
+
+```
+
+* rel error - is the ratio of our objective to that of a single root tree and always decreasing with cp
+* xerror - cross validation error, computed by taking the average of 10 fold cross validation error
+  xerror column contains of estimates of cross-validated prediction error
+for different numbers of splits (nsplit
+
+```{r}
+
+printcp(fit)
+
+```
+
+Prune our tree
+
+```{r}
+# prune the tree
+pfit<- prune(fit, cp= fit$cptable[which.min(fit$cptable[,"xerror"]),"CP"])
+```
+
+Plot our pruned tree
+```{r}
+
+fancyRpartPlot(pfit)
+
+```
+
+# CART Model with hyper parameter tuning
 
 We will tune our model by training on different hyperparameters and general observations through exploratory data analysis, which includes imputation and class imbalances.
 
@@ -179,8 +194,6 @@ countype <- emailDFrp %>%
 * minsplit - minimum number of observations in a node  required to attempts a split
 * minbucket  - minimum number of observations in any leaf
 * cp - complexity parameter creates threshold, helps with pruning - use plotcp()
-* maxcompete
-* maxsurrogate
 * xval - cross validation
 * maxdepth - depth of tree
 
@@ -390,3 +403,65 @@ validated_tree         # View a summary of the model
 * Kappa
 * ROC
 * Confusion Matrix
+
+
+###############################################################################
+# Not included in final submission
+###############################################################################
+
+### ROC 
+
+```{r}
+#type argument pron creates a matrix with the probabilities of all the emails
+#pred_prob = predict(fit, type="prob")
+#head(pred_prob)
+```
+True positive rates = TP / TP + FN (vertical)
+False Positive Rates = FP / FP + TN (horizontal)
+
+```{r}
+#ROC Curve 
+probs <- pred_prob[,2]
+
+# Make a prediction object: pred
+pred <- prediction(probs, testing$isSpam)
+pred_class %>% predict(testing, "class") 
+
+# Make a performance object: perf
+perf <- performance(pred, "tpr", "fpr")
+
+# Plot this curve
+plot(perf)
+
+# Make a performance object: perf
+perf <- performance(pred, "auc")
+
+# Print out the AUC
+print(perf@y.values[[1]])
+```
+
+My try at imputation with apply
+
+```{r}
+meanlist <- c("subBlanks","numRec","subQuesCt", "subExcCt")
+modelist <-  c("isYelling", "noHost","subSpamWords")
+
+sapply(emailDFrp, function(x) sum(is.na(x)))
+
+#dataOutput <- lapply(colnames(meanlist), function(x){emailDFrp(meanlist[x])})
+emailDFrp[meanlist] <- lapply(emailDFrp[meanlist], mean)
+
+emailDFrp[meanlist] <- lapply(emailDFrp)
+
+imputed_data <- emailDFrp %>%
+  mutate(subBlanks = ifelse(is.na(subBlanks), mean(subBlanks), subBlanks)
+        # numRec = ifelse(is.na(numRec), mean(numRec), numRec),
+        # subQuesCt = ifelse(is.na(subQuesCt), mean(subQuesCt), subQuesCt),
+        # subExcCt = ifelse(is.na(subExcCt), mean(subExcCt), subExcCt)
+         )
+
+sapply(imputed_data, function(x) sum(is.na(x)))
+
+emailDFrp$numRec <- lapply(emailDFrp$numRec, function(x) replace(x, is.na(x), mean(x, na.rm = TRUE)))
+
+```
