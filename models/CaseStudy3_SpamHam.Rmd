@@ -6,7 +6,6 @@ output: html_document
 ---
 
 ```{r,echo=FALSE}
-
 #Set your working directory
 setwd("C:\\Users\\marti\\OneDrive\\Desktop\\QTW\\Weeks\\Week_5_Materials_2")
 
@@ -692,9 +691,6 @@ var_imp_plot <- ggplot(var_imp, aes(x=reorder(myvariables, imp), y=imp, fill=myv
 
 var_imp_plot
 ```
-
-# Conclusion
-
 
 
 The trade-off of a tuned model is an increase in accuracy; however, this results in a very cumbersome tree with many leaf nodes and depths, which can lead to a cumbersome interpretation. If, however, a business stakeholder is more interested in accuracy over interpretability, then the more tuned and accurate model is best. 
