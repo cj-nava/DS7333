@@ -32,11 +32,13 @@ library(recipes) #used for knn imputation function
 library(gghighlight) #used to highlight specific visuals
 ```
 
-We observe 9348 emails in this classification problem to identify spam given 29 predictor variables.
+# Introduction
 
-The predictor variables characterize our email header and body and include factor level data such as isDear which tells us if the word dear is in the email body and also other non-categorical variables like numLines which is discrete values for the number of lines in each of our email examples. We search for Spam in a body of emails containing ham, which is not spam.
+Unwanted and unsolicited email, or spam, can cost organizations tens to hundreds of hours a year. The average worker can spend approximately 69 hours per year dealing with spam emails.^[1] Depending on the size of the organization, this can add up to a sizeable cost in billable hours lost or security breaches as a result of spoofing or phishing emails. It is a critical business need for organizations to have proper spam filtering tools that will help mitigate the business costs of time wasted on dealing with spam emails.
 
-Note spam emails are identified with the value T and ham as F. Our response is binary which warrants a categorical approach with CART using Rpart. A definition summary of the predictor variables is found below.
+This case study takes 9,348 emails from SpamAssassin, a dataset of emails used for creating and testing spam filters, to identify spam given 29 predictor variables.^[2] The predictor variables characterize our email header and body and include factor-level data such as isDear, which tells us if the word dear is in the email body and also other non-categorical variables like numLines, which is a discrete value for the number of lines in each of our email examples.
+
+Note that spam emails are identified with the value T and ham as F. Our response is binary which lends itself to a categorical approach with CART using Rpart. A definition summary of the predictor variables is found below.
 
 ```{r}
 str(emailDFrp)
@@ -45,9 +47,11 @@ str(emailDFrp)
 <img src="C:\\Users\\marti\\OneDrive\\Desktop\\QTW\\Weeks\\Week_5_Materials_2\\variable_table.PNG", width=50%>
 
 
-The data requires some preprocessing as several fields contain no values and there is an imbalance in our class of emails with 1918 spam and 5561 ham examples. Before addressing the data quality issues we split our data into a training and test sets as the imputation function finds the replacement values based on our training set only. 
+The data requires some preprocessing as several fields are empty. There is an imbalance (i.e., a larger proportion of one ham versus spam) in our class of emails with 1,918 spam and 5,561 ham examples, which can bias predictions to the majority class if the imbalance is not addressed. In this case of this case study, if the imbalance is not addressed, any predictive model used would classify all emails as ham and not result in a useful model.
 
-We split our data into an 80/20 split consisting of a training and test set not as a sampling method but in order to model our training data with cross validation and assume the test set is a brand new data set we want to test with for accuracy. 
+Before addressing the data quality issues we split our data into a training and test sets as the imputation function finds the replacement values based on our training set only. 
+
+We split our data into an 80/20 split consisting of a training and test set (not as a sampling method but in order to model our training data with cross validation) and assume the test set is a brand-new data set we want to use to test for accuracy. 
 
 ```{r}
 set.seed(1) #reproducibility
@@ -60,7 +64,7 @@ testing <- emailDFrp[-split_index,] #use index to refer to our test set from our
 
 ```
 
-Several variables have missing values, particularly numRec, or the number of receipients in the email. This justifies imputation for our data.
+Several variables have missing values, particularly numRec, or the number of receipients in the email. We will impute these values.
 
 ```{r}
 sapply(training, function(x) sum(is.na(x)))
@@ -71,11 +75,11 @@ sapply(training, function(x) sum(is.na(x)))
 
 ### Imputation with the Recipes package
 
-The recipes function is a intuititive way to preprocess our data from scaling, creating dummy variables, and various imputation methods.
+The `recipes` function is a intuititive way to preprocess our data from scaling, creating dummy variables, and various imputation methods.
 
 For our example we use knn for our imputation method. This will look at the 5 closest neighbors to determine how to fill our empty elements. Like the package name suggest the imputation process is an sequential set of functions that start with a recipe and "bake" our imputation.
 
-We specify our response and predictor variables with the recipe function.
+We specify our response and predictor variables with the `recipe` function.
 
 ```{r}
 myrecipe <- recipe(isSpam ~ ., data = training)
@@ -108,7 +112,7 @@ training <- bake(impute_prep, training)
 testing <- bake(impute_prep, testing)
 ```
 
-We double check our test and training data for missing values.Voila! An imputed data set.
+We double check our test and training data for missing values. 
 
 ```{r}
 sapply(training, function(x) sum(is.na(x)))
@@ -117,9 +121,10 @@ sapply(training, function(x) sum(is.na(x)))
 
 ### Class imbalance with Caret::Upsample
 
-The number of spam observations is significanly less than our ham emails. We have 1918 spam against 5561 ham emails.
-We can approach this by decreasing the number of ham emails or increasing the number of spam emails to match the volume of ham.
-To prevent a reduction in the number of observations we apply the upsample method. This method will increase our spam volume to match our ham volume, resulting in  5561 spam and ham emails.
+The number of spam observations are significanly fewer than ham emails. We have 1,918 spam against 5,561 ham emails.
+We can approach this by decreasing the number of ham emails or increasing the number of spam emails to match the volume of ham (i.e., balance the classes).
+
+To prevent a reduction in the number of observations we apply the upsample method. This method will increase our spam volume to match our ham volume, resulting in 5,561 spam and ham emails.
 
 
 ```{r,echo=FALSE}
@@ -137,7 +142,7 @@ table(training$isSpam)
 
 ```
 
-The upsample function from Caret increases the number of Spam observations to match our ham emails. The end result is 5561 observations for ham and spam emails.
+The upsample function from Caret increases the number of Spam observations to match our ham emails. The end result is 5,561 observations for ham and spam emails.
 
 ```{r}
 up_training <- upSample(x = training[, -ncol(training)],
@@ -199,7 +204,7 @@ print(fit_imbalance)
 fancyRpartPlot(fit_imbalance)
 ```
 
-We look at the top levels of our decision tree and summarize the results. Our root note reflects a total of 11122 observations and 5561 observations for each category of spam and ham.50% represents the distribution of our classes which is a result of applying the upsample function. Our first split depends on the number of forwards in the body of our email. 24% of our emails have ateast 4.3 forwards and split creating our second node. The remainder breaks into our third node and accounts for 76% of our original root node samples.Almost 100% of our emails are F or ham type emails, creating a nearly homogenous node for our 2nd root node. Similarly the 3rd node creates a nearly pure node but for our spam emails. This process repeats until we hit our stopping criteria, max depth of 30, or have no more observations to split on.
+We look at the top levels of our decision tree and summarize the results. Our root note reflects a total of 11,122 observations and 5,561 observations for each category of spam and ham. 50% represents the distribution of our classes which is a result of applying the upsample function. Our first split depends on the number of forwards in the body of our email. 24% of our emails have at least 4.3 forwards and split creating our second node. The remainder breaks into our third node and accounts for 76% of our original root node samples. Almost 100% of our emails are F, or ham, type emails, creating a nearly homogenous node for our 2nd root node. Similarly, the 3rd node creates a nearly pure node but for our spam emails. This process repeats until we hit our stopping criteria, max depth of 30, or have no more observations to split on.
 
 
 ```{r,echo=FALSE,fig.align='center'}
@@ -208,7 +213,7 @@ print(pfit)
 fancyRpartPlot(pfit)
 ```
 
-These splits are determined by measuring the purity of the nodes, which looks at the probability of the classes using the formula below we will compute the Ginni. The leaf nodes determine our end result and are not determined by the mean of the node but purity which is more synonymous of the mode of the leaf node. Nodes closer to 0 represent more homogenous nodes and those close to .5 least impure. For our specific example we are trying to identify Spam so we look at probability of selecting spam. 
+These splits are determined by measuring the purity of the nodes, which looks at the probability of the classes using the formula below we will compute the Gini, a measure of the probability of incorrectly classifying a datapoint. The leaf nodes determine our end result and are not determined by the mean of the node but purity which is more synonymous of the mode of the leaf node. Nodes closer to 0 represent more homogenous nodes where all elements belong to the same class. For our specific example we are trying to identify spam so we look at probability of selecting spam. 
 
 <br><br>
 <center>$Gini = 1- P(A \mid B)^{2} - P(B \mid A)^{2}$ </center>
@@ -219,6 +224,7 @@ These splits are determined by measuring the purity of the nodes, which looks at
 <br><br>
 
 We look at the weighted sum of our Ginis to decide if this an optimal split given this predictor variable against others.
+
 This process is done over several other predictor variables with an overall goal of finding the smallest weighted sum to decide on our split.
 
 <br>
@@ -227,7 +233,7 @@ This process is done over several other predictor variables with an overall goal
 
 #### Unbalanced Class Data Set
 
-Fitting our training data without balancing our classeses results in a different tree in terms of number of nodes and depth. 
+Fitting the training data without balancing the classes results in a different tree in terms of number of nodes and depth. 
 
 ```{r}
 fit <- rpart(isSpam ~ .,
@@ -237,7 +243,7 @@ print(fit)
 
 ```
 
-We observe the top nodes and see the tree splits on different variables this time around.This tree begins by splitting our observations based on our variable perCaps, which is the percentage of capital letters in the body of our email. Both nodes 2 is less homogenous than our previous tree. We calculate the Gini to verify this.
+We observe the top nodes and see the tree splits on different variables this time around. This tree begins by splitting our observations based on our variable perCaps, which is the percentage of capital letters in the body of our email. Both nodes 2 is less homogenous than our previous tree. We calculate the Gini to verify this.
 
 
 ```{r,fig.align='center'}
@@ -255,7 +261,7 @@ fancyRpartPlot(pfit2)
 
 ```
 
-The overall weighted sum of our Ginis results in a smaller value which we want. This translates to a more pure split overall.
+The overall weighted sum of our Ginis results in a smaller value, which we want. This translates to a more pure split overall.
 
 <br><br>
 <center>$Gini = 1- P(A \mid B)^{2} - P(B \mid A)^{2}$ </center>
@@ -268,7 +274,7 @@ The overall weighted sum of our Ginis results in a smaller value which we want. 
 
 ## Confusion Matrix & Accuracy
 
-We measure how each of these models perform by looking at confusion matrices that can be dissected to evaluate different aspects of our model; True Positive, False Positive, True Negative, and False Negative. The confusion matrix shows all these values and helps us compute the overal accuracy by adding all the values we correctly guessed over the total given by the formula below. We can apply this to both our training and test sets. Accuracy is higher for our training and test samples without adjusting for class imbalance. This is the result of an increase in type 2 errors as we are allowing more mistakes where we inaccurately over identify spam.
+We measure how each of these models perform by looking at confusion matrices that can be dissected to evaluate different aspects of our model; True Positive, False Positive, True Negative, and False Negative. The confusion matrix shows all these values and helps us compute the overall accuracy by adding all the values we correctly guessed over the total given by the formula below. We can apply this to both our training and test sets. Accuracy is higher for our training and test samples without adjusting for class imbalance. This is the result of an increase in type 2 errors as we are allowing more mistakes where we inaccurately over identify spam.
 
 <br>
 <center> $Accuracy = \frac {TP + TN} { ( TP + TN + FP + FN)}$ </center>
@@ -322,8 +328,7 @@ print(paste0("Accuracy:  ",accuracy2))
 
 ### Other Performance Metrics for our Classification problem
 
-We will compute additional performance metrics using our results from our test set and unbalanced data set which performed better.
-These metrics use our confusion matrix data to look at the accuracy for calculating true positives and true negatives. The higher the value the better our performance.
+We will compute additional performance metrics using our results from our test set and unbalanced data set, which performed better. These metrics use our confusion matrix data to look at the accuracy for calculating true positives and true negatives. The higher the value the better our performance.
 
 <style>
 table, th, td {
@@ -372,7 +377,7 @@ caret_confusion
 
 ### Variable Importance
 
-Important to note is that several of our explanatory variables may appear in our tree as either the primary or surrogate predictor variables. This takes the goodness of split, for cart this would be our Gini index, for each of our predictor variables  and sums to values with surrogate variables weighted differently. The chart below identifies perCaps or the percentage of capital letters as an important feature and helps contribute to our tree across as primary and surrogate variables with the highest purity when compared to other variables.
+Important to note is that several of our explanatory variables may appear in our tree as either the primary or surrogate predictor variables. This takes the goodness of split (Gini index for CART) for each of our predictor variables and sums to values with surrogate variables weighted differently. The chart below identifies perCaps, or the percentage of capital letters as an important feature, and helps contribute to our tree across as primary and surrogate variables with the highest purity when compared to other variables.
 
 ```{r,echo=FALSE}
 #variable importance
@@ -646,7 +651,7 @@ optimal_model2 <- rpart(formula = isSpam ~ .,
                          xval=5)
 ```
 
-WApplying the new cp and maxdepth increases our accuracy to 94% when applied to our test set. The resulting tree however is more complex as our cp threshold is lower allowing for a more complex tree as seen below.
+Applying the new cp and maxdepth increases our accuracy to 94% when applied to our test set. The resulting tree however is more complex as our cp threshold is lower allowing for a more complex tree as seen below.
 
 ```{r, echo=FALSE}
 predict_test <- predict(optimal_model2, testing, type="class")
@@ -659,7 +664,7 @@ print(paste0("Accuracy:  ",accuracy))
 fancyRpartPlot(optimal_model2)
 ```
 
-The most important feature is the percentage of capital letters in our email's body. This feature helps create optimal splits and is found to create lower gini index when the feature acts as a primary or surrogate feature. Another important feature is the number of characters in the body of the email, this feature is "important" as it helps contribute to more homogenous splits across our tree when compared to other predictor variables.
+The most important feature is the percentage of capital letters in our email's body. This feature helps create optimal splits and is found to create lower Gini index when the feature acts as a primary or surrogate feature. Another important feature is the number of characters in the body of the email, this feature is "important" as it helps contribute to more homogenous splits across our tree when compared to other predictor variables.
 
 * Top 5 variables by variable importance
   + 1) perCaps - percentage of capital letters in the email body
@@ -688,4 +693,17 @@ var_imp_plot <- ggplot(var_imp, aes(x=reorder(myvariables, imp), y=imp, fill=myv
 var_imp_plot
 ```
 
-The trade-off of a tuned model is an increased accuracy, however this results in a very cumbersome tree with many leaf nodes and depth. Translating the tree to a non-technical audience would be close to impossible without putting them to sleep. However our accuracy would shine as our business partners may only be interested in how well our model performs and not the guts of our tree. 
+# Conclusion
+
+
+
+The trade-off of a tuned model is an increase in accuracy; however, this results in a very cumbersome tree with many leaf nodes and depths, which can lead to a cumbersome interpretation. If, however, a business stakeholder is more interested in accuracy over interpretability, then the more tuned and accurate model is best. 
+
+
+# References
+
+1. "The Ture Cost of Spam Email", Legal Workspace, [Online]. 2020. Available http://legal-workspace.com/assets/Relaim-69-Hours-By-Tackling-Spam-Email.pdf [Accessed: 16-June-2020].  
+
+2. "Apache Spam Assassin," The Apache Software Foundation, [Online]. 2015. Available http://spamassassin.apache.org. [Accessed: 10-June-2020].  
+
+3. D. Lang and D. Nolan, Data Science in R: A Case Studies Approach to Computation Reasoning and Problem Solving. New York, New York: CRC Press.
