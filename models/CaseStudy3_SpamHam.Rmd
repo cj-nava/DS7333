@@ -1,0 +1,691 @@
+---
+title: "Case Study 3 - Identifying Spam"
+author: "Martin Garcia, Michael Catalano, Jeremy Otsap, Christian Nava"
+date: "6/3/2020"
+output: html_document
+---
+
+```{r,echo=FALSE}
+
+#Set your working directory
+setwd("C:\\Users\\marti\\OneDrive\\Desktop\\QTW\\Weeks\\Week_5_Materials_2")
+
+#load the data
+load(file="data.Rda")
+
+```
+
+
+#### Required packages
+
+```{r,results = FALSE,message=FALSE,warning=FALSE}
+
+library(rpart) # package for our CART model
+library(rpart.plot) # plots our CART model
+library(RColorBrewer) # used for color schemes
+library(rattle)
+library(caret) # used for datapartition function & tuning
+library(tidyverse) # used to ggplot
+library(ROCR) #used for our ROC curve
+library(summarytools) # our EDA tool
+library(recipes) #used for knn imputation function
+library(gghighlight) #used to highlight specific visuals
+```
+
+We observe 9348 emails in this classification problem to identify spam given 29 predictor variables.
+
+The predictor variables characterize our email header and body and include factor level data such as isDear which tells us if the word dear is in the email body and also other non-categorical variables like numLines which is discrete values for the number of lines in each of our email examples. We search for Spam in a body of emails containing ham, which is not spam.
+
+Note spam emails are identified with the value T and ham as F. Our response is binary which warrants a categorical approach with CART using Rpart. A definition summary of the predictor variables is found below.
+
+```{r}
+str(emailDFrp)
+```
+
+<img src="C:\\Users\\marti\\OneDrive\\Desktop\\QTW\\Weeks\\Week_5_Materials_2\\variable_table.PNG", width=50%>
+
+
+The data requires some preprocessing as several fields contain no values and there is an imbalance in our class of emails with 1918 spam and 5561 ham examples. Before addressing the data quality issues we split our data into a training and test sets as the imputation function finds the replacement values based on our training set only. 
+
+We split our data into an 80/20 split consisting of a training and test set not as a sampling method but in order to model our training data with cross validation and assume the test set is a brand new data set we want to test with for accuracy. 
+
+```{r}
+set.seed(1) #reproducibility
+#split our data with createDataPartition with caret into an 80-20 split, training and test respectively
+split_index <- createDataPartition(emailDFrp$isSpam, p=.8,list = FALSE, times=1)
+
+#training and test sets
+training <- emailDFrp[ split_index,] #use index to refer to training set from our sample
+testing <- emailDFrp[-split_index,] #use index to refer to our test set from our sample
+
+```
+
+Several variables have missing values, particularly numRec, or the number of receipients in the email. This justifies imputation for our data.
+
+```{r}
+sapply(training, function(x) sum(is.na(x)))
+```
+
+# Data Preparation
+
+
+### Imputation with the Recipes package
+
+The recipes function is a intuititive way to preprocess our data from scaling, creating dummy variables, and various imputation methods.
+
+For our example we use knn for our imputation method. This will look at the 5 closest neighbors to determine how to fill our empty elements. Like the package name suggest the imputation process is an sequential set of functions that start with a recipe and "bake" our imputation.
+
+We specify our response and predictor variables with the recipe function.
+
+```{r}
+myrecipe <- recipe(isSpam ~ ., data = training)
+myrecipe
+```
+
+We define our preprocessing steps, in this case we impute our data via the knn method that looks at the five nearest neighbors.
+
+```{r}
+mysteps <- myrecipe %>%
+  step_knnimpute(all_predictors(), neighbors = 5)
+  #step_meanimpute()
+  #step_modeimpute()
+  #step_scale()
+  #step_dummy()
+
+mysteps
+```
+
+We provide the data we want to run through our preprocessing step, in this case step_knnimpute for our knn imputation.
+
+```{r}
+impute_prep <- prep(mysteps, training = training) # can apply to test as well
+```
+
+We apply our steps to our data with the bake function to both our training and test sets.
+
+```{r}
+training <- bake(impute_prep, training)
+testing <- bake(impute_prep, testing)
+```
+
+We double check our test and training data for missing values.Voila! An imputed data set.
+
+```{r}
+sapply(training, function(x) sum(is.na(x)))
+```
+
+
+### Class imbalance with Caret::Upsample
+
+The number of spam observations is significanly less than our ham emails. We have 1918 spam against 5561 ham emails.
+We can approach this by decreasing the number of ham emails or increasing the number of spam emails to match the volume of ham.
+To prevent a reduction in the number of observations we apply the upsample method. This method will increase our spam volume to match our ham volume, resulting in  5561 spam and ham emails.
+
+
+```{r,echo=FALSE}
+
+ggplot(training, aes(x=as.factor(isSpam), fill=as.factor(isSpam) )) + 
+  geom_bar() +
+  scale_fill_hue(c = 40) +
+  theme(legend.position="none") +
+  coord_flip() +
+  xlab("Class") +
+  ylab("Volume") +
+  labs(fill = "Is Spam? (T/F)")
+
+table(training$isSpam) 
+
+```
+
+The upsample function from Caret increases the number of Spam observations to match our ham emails. The end result is 5561 observations for ham and spam emails.
+
+```{r}
+up_training <- upSample(x = training[, -ncol(training)],
+                     y = training$isSpam) 
+
+#remove column class as not needed for modeling
+#training$Class <- NULL
+
+table(up_training$Class) 
+
+```
+
+
+```{r,echo=FALSE}
+ggplot(up_training, aes(x=as.factor(Class), fill=as.factor(Class) )) + 
+  geom_bar() +
+  scale_fill_hue(c = 40) +
+  theme(legend.position="none") +
+  coord_flip() +
+  xlab("Class") +
+  ylab("Volume") +
+  labs(fill = "Is Spam? (T/F)")
+
+table(up_training$Class) 
+
+```
+
+# CART Models
+
+### CART Model (Default hyperparameters)
+
+We set  benchmarks for our final model by creating a "vanilla" model that trains a decision tree with the default parameters. This includes the hyperparameters below with their respective default values. 
+
+* minsplit = 20 - 20 minimum emails required in each node to initiate a split
+* minbucket = round(minsplit/3) - 20 emails / 3 emails = 7 minimum number of emails in any of our leaf nodes
+* cp = .01 - Complexity parameter used to control the size of our tree
+* xval = 10 - 10 fold cross validation
+* maxdepth = 30 - reflects 30 depth levels with the root note counted as 0
+
+We will train with both the training set prior to applying the upsample and a separate training set with the upsample function applied.
+
+#### Balanced Class Data Set
+
+The decision tree of our balanced training set returns with 14 leaf nodes and a depth of 9 as seen below.
+
+```{r,echo = T, results = 'hide',fig.align='center'}
+
+#we first train on our balanced class data set
+
+up_training <- up_training %>%
+  rename(isSpam = Class)
+#forwards, 2664, 8458
+
+
+fit_imbalance <- rpart(isSpam ~ .,
+             method="class", data=up_training) #fitting our model with our upsampled training set
+
+print(fit_imbalance)
+fancyRpartPlot(fit_imbalance)
+```
+
+We look at the top levels of our decision tree and summarize the results. Our root note reflects a total of 11122 observations and 5561 observations for each category of spam and ham.50% represents the distribution of our classes which is a result of applying the upsample function. Our first split depends on the number of forwards in the body of our email. 24% of our emails have ateast 4.3 forwards and split creating our second node. The remainder breaks into our third node and accounts for 76% of our original root node samples.Almost 100% of our emails are F or ham type emails, creating a nearly homogenous node for our 2nd root node. Similarly the 3rd node creates a nearly pure node but for our spam emails. This process repeats until we hit our stopping criteria, max depth of 30, or have no more observations to split on.
+
+
+```{r,echo=FALSE,fig.align='center'}
+pfit<- prune(fit_imbalance, cp=.2)
+print(pfit)
+fancyRpartPlot(pfit)
+```
+
+These splits are determined by measuring the purity of the nodes, which looks at the probability of the classes using the formula below we will compute the Ginni. The leaf nodes determine our end result and are not determined by the mean of the node but purity which is more synonymous of the mode of the leaf node. Nodes closer to 0 represent more homogenous nodes and those close to .5 least impure. For our specific example we are trying to identify Spam so we look at probability of selecting spam. 
+
+<br><br>
+<center>$Gini = 1- P(A \mid B)^{2} - P(B \mid A)^{2}$ </center>
+<br><br>
+<center>$Node 2:  .0221 = 1 - (84/2664)^{2} - (2580/2664)^{2}$ </center>
+<br>
+<center>$Node 3:  .4564 = 1 - (5477/8458)^{2} - (2981/8458)^{2}$ </center>
+<br><br>
+
+We look at the weighted sum of our Ginis to decide if this an optimal split given this predictor variable against others.
+This process is done over several other predictor variables with an overall goal of finding the smallest weighted sum to decide on our split.
+
+<br>
+<center> <b>Weight Sum of the Ginis</b> $= (2664/11122 * .0221) + (8458/11122 * .4564) = .3523$ </center>
+<br>
+
+#### Unbalanced Class Data Set
+
+Fitting our training data without balancing our classeses results in a different tree in terms of number of nodes and depth. 
+
+```{r}
+fit <- rpart(isSpam ~ .,
+             method="class", data=training) #fitting our model without the upsample training set
+
+print(fit)
+
+```
+
+We observe the top nodes and see the tree splits on different variables this time around.This tree begins by splitting our observations based on our variable perCaps, which is the percentage of capital letters in the body of our email. Both nodes 2 is less homogenous than our previous tree. We calculate the Gini to verify this.
+
+
+```{r,fig.align='center'}
+
+#Decision Tree
+fancyRpartPlot(fit)
+
+```
+
+```{r,,fig.align='center'}
+#Pruned decision tree used to illustrate first nodes
+pfit2<- prune(fit, cp=.2)
+print(pfit2)
+fancyRpartPlot(pfit2)
+
+```
+
+The overall weighted sum of our Ginis results in a smaller value which we want. This translates to a more pure split overall.
+
+<br><br>
+<center>$Gini = 1- P(A \mid B)^{2} - P(B \mid A)^{2}$ </center>
+<br><br>
+<center>$Node 2:  .29 = 1 - (1138/6463)^{2} - (5325/6463)^{2}$ </center>
+<br>
+<center>$Node 3:  .356 = 1 - (780/1016)^{2} - (236/1016)^{2}$ </center>
+<br><br>
+<center> <b>Weight Sum of the Ginis</b> $= (6463/7479 * .29) + (1016/7479 * .356) = .298$ </center>
+
+## Confusion Matrix & Accuracy
+
+We measure how each of these models perform by looking at confusion matrices that can be dissected to evaluate different aspects of our model; True Positive, False Positive, True Negative, and False Negative. The confusion matrix shows all these values and helps us compute the overal accuracy by adding all the values we correctly guessed over the total given by the formula below. We can apply this to both our training and test sets. Accuracy is higher for our training and test samples without adjusting for class imbalance. This is the result of an increase in type 2 errors as we are allowing more mistakes where we inaccurately over identify spam.
+
+<br>
+<center> $Accuracy = \frac {TP + TN} { ( TP + TN + FP + FN)}$ </center>
+
+
+#### Training Data
+
+
+Confusion matrix and accuracy for our original training set without class balancing.
+```{r, echo=FALSE}
+
+#type argument class creates a vector of the sum of T and F
+predict_training= predict(fit, type="class")
+confusion_table<-table(training$isSpam,predict_training)
+print(confusion_table)
+accuracy <- sum(diag(confusion_table))/sum(confusion_table)
+print(paste0("Accuracy:  ", accuracy))
+```
+
+
+Confusion matrix and accuracy for our balanced data set.
+```{r, echo=FALSE}
+predict_training2= predict(fit_imbalance, type="class")
+confusion_table2<-table(up_training$isSpam,predict_training2)
+print(confusion_table2)
+accuracy2 <- sum(diag(confusion_table2))/sum(confusion_table2)
+print(paste0("Accuracy:  ", accuracy2))
+
+```
+#### Test Data
+
+Confusion matrix and accuracy for our original training set without class balancing applied to our test set.
+```{r, echo=FALSE}
+
+#running our model with our original training set only imputed with knn
+predict_test <- predict(fit, testing, type="class")
+confusion_table<- table(testing$isSpam,predict_test)
+confusion_table
+accuracy <- sum(diag(confusion_table))/sum(confusion_table)
+print(paste0("Accuracy:  ",accuracy))
+```
+Confusion matrix and accuracy for our balanced data set.
+```{r, echo=FALSE}
+#running our model with our balanced data
+predict_test2 <- predict(fit_imbalance, testing, type="class")
+confusion_table2<- table(testing$isSpam,predict_test2)
+print(confusion_table2)
+accuracy2 <- sum(diag(confusion_table2))/sum(confusion_table2)
+print(paste0("Accuracy:  ",accuracy2))
+```
+
+### Other Performance Metrics for our Classification problem
+
+We will compute additional performance metrics using our results from our test set and unbalanced data set which performed better.
+These metrics use our confusion matrix data to look at the accuracy for calculating true positives and true negatives. The higher the value the better our performance.
+
+<style>
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+  text-align: center;
+}
+</style>
+
+<center>
+<table>
+<tr><th>&nbsp;</th><th>Actual - Ham</th><th>Actual - Spam </th></tr>
+<tr><td> Predicted - Ham </td><td>1327 (TN) </td> <td>63 (FN) </td></tr>
+<tr><td> Predicted - Spam </td><td>105 (FP) </td><td>374 (TP) </td></tr>
+</table>
+</center>
+<br>
+Precision compares our overall true positives, or those we accurately guessed as spam, over all accurately identified spam and misidentified spam. 
+
+<center>$Precision = \frac {TP} {TP + FP}$ </center>
+<br>
+<center>  $.78 = \frac {374} {374 + 105}$ </center>
+
+Recall also known as sensitivity looks at the ratio of true positives over true positives plus false negatives.
+
+<center>$Recall/Sensitivity = \frac {TP} {TP + FN}$ </center>
+<br>
+<center>  $.85 = \frac {374} {374 + 63}$ </center>
+
+Specificity looks at our overall true negatives or those we accurately as spam over the true negatives and false positives.
+
+<center>$Specificity = \frac {TN} {TN + FP}$ </center>
+<br>
+<center>  $.92 = \frac {1327} {1327 + 105}$ </center>
+
+### Caret Approach
+
+Caret approach with our test set also prints the same metric in one line.
+
+```{r}
+caret_confusion <- confusionMatrix(data = predict_test, reference = testing$isSpam)
+caret_confusion
+```
+
+
+
+### Variable Importance
+
+Important to note is that several of our explanatory variables may appear in our tree as either the primary or surrogate predictor variables. This takes the goodness of split, for cart this would be our Gini index, for each of our predictor variables  and sums to values with surrogate variables weighted differently. The chart below identifies perCaps or the percentage of capital letters as an important feature and helps contribute to our tree across as primary and surrogate variables with the highest purity when compared to other variables.
+
+```{r,echo=FALSE}
+#variable importance
+var_imp <- data.frame(imp = fit$variable.importance)
+
+var_imp$myvariables <- var_imp
+var_imp$myvariables <- rownames(var_imp)
+
+var_imp_ss <-  var_imp %>% 
+    arrange(desc(imp)) %>%
+    top_n(n = 5, wt=imp)
+
+var_imp_plot <- ggplot(var_imp_ss, aes(x=reorder(myvariables, imp), y=imp, fill=myvariables)) +
+    geom_bar(stat="identity") +
+    coord_flip() 
+
+var_imp_plot
+
+```
+
+### Simple tuning
+
+We do minor adjustments to our simple model by adjusting our complexity parameter.A high cp leads to a smaller tree and lower cp to larger tree.
+
+```{r}
+
+plotcp(fit) # visualize cross-validation results
+abline(v=.014, col="blue")
+
+```
+
+We want a complexity parameter that reduces our cross validation error. This value is computed by taking the average of a 10 fold cross validation error.
+
+```{r}
+
+printcp(fit)
+
+```
+
+We prune our tree based on the smallest cross validation error.
+
+```{r}
+# prune the tree
+pfit<- prune(fit, cp=fit$cptable[which.min(fit$cptable[,"xerror"]),"CP"])
+```
+
+We test our accuracy on our pruned tree.
+
+```{r, echo=FALSE}
+predict_test <- predict(pfit, testing, type="class")
+confusion_table<- table(testing$isSpam,predict_test)
+print(confusion_table)
+accuracy <- sum(diag(confusion_table))/sum(confusion_table)
+print(paste0("Accuracy:  ",accuracy))
+```
+
+We plot our pruned tree, but we didnt see major changes in our accuracy or tree plot. We further tune our model by testing different combinations of hyperparameters.
+
+```{r,fig.align='center',echo=FALSE}
+
+fancyRpartPlot(pfit)
+
+```
+
+# CART Model with hyper parameter tuning
+
+We will tune our model by training on different combinations of the hyperparameters below through a grid search approach.
+
+
+* minsplit - minimum number of observations in a node  required to attempts a split
+* minbucket  - minimum number of observations in any leaf
+* cp - complexity parameter creates threshold, helps with pruning 
+* xval - cross validation
+* maxdepth - depth of tree, or levels from root which starts at 0 to the level of our leaf nodes
+
+We approach our hyperparameters using a grid search which creates a grid of 588 combinations of hyperparameters. 
+
+```{r}
+
+models <- list()
+ 
+hyper_grid <- expand.grid(
+    minsplit = c(10,25, 50,100, 150, 250,500),
+    minbucket = c(10,25, 50, 100,200,400,500),
+    maxdepth = c(3, 5, 7, 10, 25,30),
+#    cp = c(.001,.01,.1,.3),
+    xval = c(3,5)
+    
+)
+
+head(hyper_grid)
+```
+
+
+
+```{r}
+for(i in 1:nrow(hyper_grid)) {
+    
+    # create parameter list
+
+        minsplit = hyper_grid$minsplit[i]
+        minbucket = hyper_grid$minbucket[i]
+        maxdepth = hyper_grid$maxdepth[i]
+#        cp = hyper_grid$cp[i]
+        xval = hyper_grid$xval[i]
+    
+    # reproducibility
+    set.seed(123)
+    
+    # train model
+    models[[i]] <- rpart(formula = isSpam ~ .,
+                         data=training,
+                         method = "class",
+                         minsplit=minsplit,
+                         minbucket=minbucket,
+                         maxdepth=maxdepth,
+                    #     cp=cp,
+                         xval=xval)
+
+}
+```
+
+We generate several models given our different combinations of hyperparameters. 
+
+Example - Model 1
+
+```{r, echo=FALSE}
+models[[1]]
+
+```
+
+
+The functions below go through our models to find our optimal complexity parameter and minimum cross validation error with the given cp value.
+
+```{r}
+# function to get optimal cp
+get_cp <- function(x) {
+  min    <- which.min(x$cptable[, "xerror"])
+  cp <- x$cptable[min, "CP"] 
+}
+
+# function to get minimum error
+get_min_error <- function(x) {
+  min    <- which.min(x$cptable[, "xerror"])
+  xerror <- x$cptable[min, "xerror"] 
+}
+
+hyper_grid %>%
+  mutate(
+    cp    = purrr::map_dbl(models, get_cp),
+    error = purrr::map_dbl(models, get_min_error)
+    ) %>%
+  arrange(error) %>%
+  top_n(-5, wt = error)
+
+
+```
+
+The list above shows our optimal model parameters and resulting cross validation error.
+
+We apply the parameters below.
+
+* minsplit = 10
+* minbucket = 10
+* maxdepth = 10
+* xval = 5
+* cp = .01
+
+```{r}
+
+optimal_model <- rpart(formula = isSpam ~ .,
+                         data=training,
+                         method = "class",
+                         minsplit=10,
+                         minbucket=10,
+                         maxdepth=10,
+                         cp=.01,
+                         xval=5)
+
+
+```
+
+Tuning on our hyperparameters does not significantly improve our model nor reduce the complexity of our decision tree. We tune further using the Caret package to find an optimal complexity parameter for pruning our tree and also max-depth.
+
+```{r, echo=FALSE}
+predict_test <- predict(optimal_model, testing, type="class")
+confusion_table<- table(testing$isSpam,predict_test)
+print(confusion_table)
+accuracy <- sum(diag(confusion_table))/sum(confusion_table)
+print(paste0("Accuracy:  ",accuracy))
+```
+
+```{r,fig.align='center',echo=FALSE}
+
+fancyRpartPlot(optimal_model)
+
+```
+
+
+# Caret Approach to tuning
+
+With package Caret we can tune to find an optimal complexity parameter. This is done by setting our method to 'rpart' and creating a smaller grid for the different cp values. Caret only allows tuning on either complexity parameters or max-depth via the method type.
+For tuning for cp we use method type "rpart".
+
+We find that a lower complexity parameter of .001 returns a more accurate model.
+
+```{r}
+
+# Create a trainControl object to control how the train function creates the model
+train_control <- trainControl(method = "cv",   # Use cross validation
+                              number = 5             # Use 10 partitions
+                              )             # Repeat 2 times
+
+# Set required parameters for the model type we are using**
+tune_grid = expand.grid(
+    cp = c(.001,.01,.1,.3,.5)
+    )
+
+
+# Use the train() function to create the model
+validated_tree <- train(isSpam ~ .,
+                        data=training,                 # Data set
+                        method="rpart",                     # Model type(decision tree)
+                        trControl= train_control,           # Model control options
+                        tuneGrid = tune_grid,
+                        na.action = na.pass)               # Required model parameters
+                       
+validated_tree         # View a summary of the model
+
+```
+
+Using the same train function from caret we can find an optimal maxdepth for our tree. 
+The accuracy plateaus at a max depth 12 and returns an the maximum accuracy with a tree with maxdepth of 14.
+
+```{r}
+
+# Create a trainControl object to control how the train function creates the model
+train_control <- trainControl(method = "cv",   # Use cross validation
+                              number = 5             # Use 10 partitions
+                              )             # Repeat 2 times
+
+# Set required parameters for the model type we are using**
+tune_grid = expand.grid(
+    maxdepth = c(3:25)
+    )
+
+
+# Use the train() function to create the model
+validated_tree <- train(isSpam ~ .,
+                        data=training,                 # Data set
+                        method="rpart2",                     # Model type(decision tree)
+                        trControl= train_control,           # Model control options
+                        tuneGrid = tune_grid,
+                        na.action = na.pass)               # Required model parameters
+                         
+validated_tree         # View a summary of the model
+
+```
+
+We run our new cp and maxdepth values with our tuned hyperparameters.
+
+```{r}
+
+optimal_model2 <- rpart(formula = isSpam ~ .,
+                         data=training,
+                         method = "class",
+                         minsplit=10,
+                         minbucket=10,
+                         maxdepth=12,
+                         cp=.001,
+                         xval=5)
+```
+
+WApplying the new cp and maxdepth increases our accuracy to 94% when applied to our test set. The resulting tree however is more complex as our cp threshold is lower allowing for a more complex tree as seen below.
+
+```{r, echo=FALSE}
+predict_test <- predict(optimal_model2, testing, type="class")
+confusion_table<- table(testing$isSpam,predict_test)
+print(confusion_table)
+accuracy <- sum(diag(confusion_table))/sum(confusion_table)
+print(paste0("Accuracy:  ",accuracy))
+```
+```{r,fig.align='center', echo=FALSE}
+fancyRpartPlot(optimal_model2)
+```
+
+The most important feature is the percentage of capital letters in our email's body. This feature helps create optimal splits and is found to create lower gini index when the feature acts as a primary or surrogate feature. Another important feature is the number of characters in the body of the email, this feature is "important" as it helps contribute to more homogenous splits across our tree when compared to other predictor variables.
+
+* Top 5 variables by variable importance
+  + 1) perCaps - percentage of capital letters in the email body
+  + 2) bodyCharct - number of characters in the email body
+  + 3) numLines - number of lines in the email body
+  + 4) perHTML - percent of characters with html tags
+  + 5) numDlr - number of dollar signs in the email body
+
+```{r,fig.align='center',echo=FALSE}
+
+#variable importance
+var_imp <- data.frame(imp = optimal_model2$variable.importance)
+
+var_imp$myvariables <- var_imp
+var_imp$myvariables <- rownames(var_imp)
+
+#var_imp_ss <-  var_imp %>% 
+#    arrange(desc(imp)) %>%
+#    top_n(n = 5, wt=imp)
+
+var_imp_plot <- ggplot(var_imp, aes(x=reorder(myvariables, imp), y=imp, fill=myvariables)) +
+    geom_bar(stat="identity") +
+    coord_flip()  + 
+    gghighlight (imp>200)
+
+var_imp_plot
+```
+
+The trade-off of a tuned model is an increased accuracy, however this results in a very cumbersome tree with many leaf nodes and depth. Translating the tree to a non-technical audience would be close to impossible without putting them to sleep. However our accuracy would shine as our business partners may only be interested in how well our model performs and not the guts of our tree. 
