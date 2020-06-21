@@ -1,0 +1,275 @@
+---
+title: "Case Study 4 - Time Series"
+author: "Christian Nava"
+date: "6/17/2020"
+output:
+  rmdformats::readthedown:
+    highlight: kate
+---
+
+
+```{r setup, include=FALSE}
+library(rmdformats)
+library(tidyverse)  # data manipulaiton
+library(data.table)
+library(tswge)  # Time series package
+library(tseries)  # for Dickey-Fuller test 
+library(formattable)  # for table formatting
+knitr::opts_chunk$set(echo = FALSE,
+               prompt = FALSE,
+               tidy = TRUE,
+               comment = NA,
+               message = FALSE,
+               warning = FALSE)
+```
+
+***
+# Time Series Analysis of Seasonal Flu
+***
+Martin Garcia, Michael Catalano, Jeremy Otsap, Christian Nava  
+July 1, 2020  
+
+
+## Introduction
+***
+
+
+We are going to use ARIMA to model the seasonal flu.
+
+1.	Extract historical flu data (positive cases over time) – you can choose to model flu patterns at the national or regional/state-level
+2.	Build an ARIMA model; determine the appropriate values for (p,d,q)
+3.	How well does your model perform on validation data? (Note: you’ll need to create a training and validation set to measure forecast accuracy)
+4.	Provide analysis to support your determinations
+
+
+
+```{r}
+library(readr)
+FluNetReport <- read_csv("../data/FluNetReport.csv")
+```
+
+Weekly flu data are taken from the World Health Organization's (WHO) FluNet database from October 04, 2010 through June 07, 2020. The data was cleaned and only 4 of the 22 variables were kept: Week, SDATE, SPEC_PROCESSED_NB, and ALL_INF. The latter three were renamed to wk_date.start, total_specimens.tested, and total_flu_cases.positive, respectively. An additional variable, `total_flu_cases.percent_positive`, was created, which is a percentage of the total specimens processed that tested positive for any strain of influenza. We will use this variable as our target time series variable.
+
+
+```{r}
+FluNetReport <- FluNetReport %>% 
+  select(Week, SDATE, SPEC_PROCESSED_NB, ALL_INF) %>% 
+  rename(wk_date.start = SDATE,
+         total_specimens.tested = SPEC_PROCESSED_NB,
+         total_flu_cases.positive = ALL_INF)
+
+# add column for percent positive cases
+FluNetReport = mutate(FluNetReport, total_flu_cases.percent_positive = total_flu_cases.positive/total_specimens.tested*100)
+
+# convert data type from string to date
+FluNetReport$wk_date.start <- as.Date(FluNetReport$wk_date.start, "%m/%d/%y")
+```
+
+
+```{r}
+# create time series of percent positive flu cases
+ts_flu.percent_positive_cases <- ts(FluNetReport[ ,5])
+```
+
+```{r fig.height=4}
+plot(ts_flu.percent_positive_cases, 
+        main=c(paste("Weekly Incidence Rate of Flu in the United States"), 
+               paste("from October 04, 2010 through June 07, 2020")),
+        xlab="Week",
+        ylab="Percent Positive Cases")
+```
+
+  Per the plots below
+  
+  Condition 1: The mean does not appear to depend on time. We can see that there is some cyclic behavior in the realizations. The value tends to be lower on or about every 50th time point. If we were given another realizaton, it is possible we could observe similar highs and lows
+  
+  Condition 2: From a visual inspection it is difficult to determine if the variance is finite and does not depend on time. 
+  
+  Condition 3: The correlation between data points (covariance) only depends on how far apart they are in time and not where they are in time (i.e., contstant autocovariance). 
+  
+```{r}
+# plot the data
+invisible(plotts.sample.wge(ts_flu.percent_positive_cases))
+```
+
+The ACF plots below split the data to see if the autocorrelations (autocovariance) change over time. Autocorrelations that change over time would imply a non-stationary time series. Comparing the first half of the data to the second half of the data shows the ACFs are nearly identical. This suggests the autocovariance of the data is constant over time.
+
+```{r}
+# to compare the ACF structure of the first half of the data to the second half.
+par(mfrow = c(1,2))
+acf(ts_flu.percent_positive_cases[1:252])
+acf(ts_flu.percent_positive_cases[253:505])
+```
+
+There appears to be cyclic behavior in the data, which could imply seasonality and a non-stationary process. However, time series data with cyclic behavior and no trend or seasonality is considered stationary if the cycles are not of a fixed length. Per the realization plot above and Table 1 below, there does not appear to be a trend, and it is evident that the cycles (measuring from peak to peak) are not of a fixed length. The number of weeks that elapse between peaks for the time series varies between 41 and 63 weeks. Intuitively, this makes sense as the peak of the flu "season" doesn't necessarily fall on the same week or month every year. Therefore, from a visual inspection of the plots, the data appear to come from a stationary process. 
+
+##### Table 1: Flu Season  Peak Week
+
+| Flu Season    | Peak Week Start Date  | Peak Week Number  | # of Weeks Between Peaks  | Positive Rate   |
+|:------------- |:--------------------- | :----------------:| :------------------------:| :--------------:|
+| 2010-2011     | January 31, 2011      |                 5 |                       N/A |          35.49% |
+| 2011-2012     | March 12, 2012        |                11 |                        58 |          31.90% |
+| 2012-2013     | December 24, 2012     |                52 |                        41 |          38.18% |
+| 2013-2014     | December 23, 2013     |                52 |                        52 |          30.61% |
+| 2014-2015     | December 22, 2014     |                52 |                        52 |          32.37% |
+| 2015-2016     | March 07, 2016        |                10 |                        63 |          28.59% |
+| 2016-2017     | February 20, 2017     |                 8 |                        50 |          28.17% |
+| 2017-2018     | January 08, 2018      |                 2 |                        46 |          30.50% |
+| 2018-2019     | February 25, 2019     |                 9 |                        59 |          29.58% |
+| 2019-2020     | February 03, 2020     |                 6 |                        49 |          32.74% |
+
+###### Dickey-Fuller Test for Stationarity
+
+Employing an augmented Dickey-Fuller test is a more formal approach to check for stationarity. An augmented Dickey-Fuller test helps determine if one or more seasonal factors should be included in the model and tests the null hypothesis that the autoregressive model has a root outside of the unit circle. The test depends on failing to reject the null hypothesis to decide whether there is a unit root present. However, failing to reject the null hypothesis is not evidence that a unit root (i.e., seasonal factor) exists. 
+
+A *p*-value > 0.5 for the augmented Dickey-Fuller test fails to reject the null hypothesis, which means that a unit root, or one or more seasonal factors, may be present. In the case of this data, the augmented Dickey-Fuller test yields a *p*-value of 0.01, suggesting there are no seasonal factors present and validating the initial visual inspection of the data.
+
+Per the initial visual inspection and Dickey-Fuller test, the data will be assumed to be stationary with no trend and no seasonal factors.
+```{r}
+# Check for stationarity using the Dickey-Fuller test
+adf.test(ts_flu.percent_positive_cases)  
+```
+
+## Candidate Model 1 - ARMA(3,1)  
+***
+For this candidate model, we will assume that the realization is stationary. We use `aic5.wge` to identify the models with the lowest AIC and BIC. The AIC identifies a potential ARMA(3,2) model. 
+```{r}
+formattable(invisible(aic5.wge(ts_flu.percent_positive_cases, type = 'aic')))
+```
+
+The BIC identifies a potential ARMA(3,1) model.
+```{r}
+formattable(aic5.wge(ts_flu.percent_positive_cases, type = 'bic'))
+```
+
+We use this to estimate paramters using p=3 and q=1. The model takes on the form $(1-2.44B+1.93B^2-0.48B^3)X_t = (1-0.94B)a_t, \;\;\;\sigma_a^2 = 2.14\;$.
+```{r}
+params <- est.arma.wge(ts_flu.percent_positive_cases, p=3, q=1)
+invisible(factor.wge(phi=params$theta))
+```
+
+Next, we plot the 4-week forecast with upper and lower confidence limits. 
+
+```{r}
+f = fore.aruma.wge(ts_flu.percent_positive_cases,
+                   phi=params$phi, 
+                   theta=params$theta, 
+                   n.ahead = 8, 
+                   lastn = FALSE, 
+                   plot=TRUE, 
+                   limits=TRUE)
+
+```
+
+We will use the average squared error (ASE) to measure the goodness of fit of the model (performance). A low ASE value means the model made few prediction errors.
+
+**More explanation goes in here about how a rolling window ASE is better than a single ASE and how the rolling window ASE is similar to using a training and validation set.** 
+The training dataset will be at least 364 observations (approximately 80% of the data), allowing for at least 7 years of data. The remaining observations will be used as the forecast horizon, or validation set. 
+
+The rolling window ASE shows a spike around observations 22, 80, and 90 indicating it did not do a good job of predicting those observations. There are also several other spikes in the ASE where the model did not predict the observed value ver well.
+
+```{r}
+#Code from Prof. Sadler's Time Series Course Unit 7
+
+#Model 1
+phis = params$phi
+thetas = params$theta
+s  = 0
+d  = 0
+
+trainingSize = 364 # this is the window size (we used a window of 4 years or 208 weeks)
+horizon = 8
+ASEHolder = numeric() # this is an empty variable that will hold all the ASE values
+
+for( i in 1:(505-(trainingSize + horizon) + 1))
+{
+  forecasts = fore.aruma.wge(ts_flu.percent_positive_cases[i:(i+(trainingSize-1))], 
+                             phi = phis, 
+                             theta = thetas, 
+                             s = s, 
+                             d = d, 
+                             n.ahead = horizon,plot=FALSE)
+  ASE = mean((ts_flu.percent_positive_cases[(trainingSize+i):(trainingSize+ i + (horizon) - 1)] - forecasts$f)^2)
+  ASEHolder[i] = ASE
+}
+
+WindowedASE = mean(ASEHolder)
+WindowedASE
+median_windowed_ASE = median(ASEHolder)
+median_windowed_ASE
+
+# visualization of windowed ASE over time
+newASE = c(rep(NA,410),ASEHolder)
+
+par(mar = c(5,5,2,5))
+plot(ts_flu.percent_positive_cases[400:505], 
+     type="l", 
+     ylab='Observation Value', 
+     xlab='Time', 
+     col="blue", 
+     main = 'Rolling Window ASE Over Time'
+     )
+par(new = T)
+plot(newASE[400:505], 
+     type="l", 
+     axes=F, 
+     ylab=NA, 
+     xlab=NA, 
+     col="red"
+     )
+axis(side=4)
+mtext(side=4, line=3, 'ASE')
+legend("topright",
+       legend=c("Obs. Value","ASE"),
+       lty=c(1,2), 
+       col=c("blue","red"), 
+       cex=.6
+       )
+
+```
+
+Ideally, for the rolling window ASE chart above, we would want to see a low and steady ASE value (red line) as compared to the observed values (blue line). This would indicate that the model did a good job of predicting most, if not all, the observed values. Spikes in the ASE value represent observed values that were not predicted well, areas of large error.
+
+## Candidate Model 2 (NOT SURE IF THIS IS EXTRA WORK NOT ASKED FOR IN THE BRIEF. CONSIDER REMOVING.)
+***
+
+#### ACF and Spectral Density
+
+The autocorrelations exhibit sinusoidal ACF behavior converging to zero, which is characteristic of complex conjugate roots from an AR(2) process.
+ 
+```{r fig.height = 4, fig.width = 12, fig.align = "center"}
+# plot the ACF and spectral densities
+#invisible allows the plot to print, but supresses the output
+invisible(acf(ts_flu.percent_positive_cases, lag.max = 400))
+par(mfrow = c(1,2))
+invisible(parzen.wge(ts_flu.percent_positive_cases))
+invisible(parzen.wge(ts_flu.percent_positive_cases,trunc=400))
+```
+Additionaly, when looking at the spectral density, which helps identify the frequency content of a time series, there is a significant peak near 0 suggesting complex roots and seasonality in the data. In the first spectral density plot there is a large peak near zero. When the truncation point is changed to 400, this peak is at approimately 0.01923, or 1/52, which indicates a period of 52 weeks, or one year. 
+
+These observations support the conclusion of non-stationarity and suggest we can use various transformations to stationarize the data.
+
+
+```{r}
+par(mfrow = c(1,2))
+acf(ts_flu.percent_positive_cases)
+pacf(ts_flu.percent_positive_cases)
+```
+
+```{r}
+pacf(ts_flu.percent_positive_cases)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
