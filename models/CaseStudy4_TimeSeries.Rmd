@@ -33,6 +33,7 @@ July 1, 2020
 ## Introduction
 ***
 
+The seasonal flu
 
 We are going to use ARIMA to model the seasonal flu.
 
@@ -124,7 +125,7 @@ Employing an augmented Dickey-Fuller test is a more formal approach to check for
 
 A *p*-value > 0.5 for the augmented Dickey-Fuller test fails to reject the null hypothesis, which means that a unit root, or one or more seasonal factors, may be present. In the case of this data, the augmented Dickey-Fuller test yields a *p*-value of 0.01, suggesting there are no seasonal factors present and validating the initial visual inspection of the data.
 
-Per the initial visual inspection and Dickey-Fuller test, the data will be assumed to be stationary with no trend and no seasonal factors.
+Per the initial visual inspection and Dickey-Fuller test, the data for the first model will be assumed to be stationary with no trend and no seasonal factors.
 ```{r}
 # Check for stationarity using the Dickey-Fuller test
 adf.test(ts_flu.percent_positive_cases)  
@@ -166,7 +167,7 @@ We will use the average squared error (ASE) to measure the goodness of fit of th
 **More explanation goes in here about how a rolling window ASE is better than a single ASE and how the rolling window ASE is similar to using a training and validation set.** 
 The training dataset will be at least 364 observations (approximately 80% of the data), allowing for at least 7 years of data. The remaining observations will be used as the forecast horizon, or validation set. 
 
-The rolling window ASE shows a spike around observations 22, 80, and 90 indicating it did not do a good job of predicting those observations. There are also several other spikes in the ASE where the model did not predict the observed value ver well.
+The rolling window ASE shows a spike around observations 22, 80, and 90 indicating it did not do a good job of predicting those observations. There are also several other spikes in the ASE where the model did not predict the observed value very well.
 
 ```{r}
 #Code from Prof. Sadler's Time Series Course Unit 7
@@ -207,7 +208,7 @@ plot(ts_flu.percent_positive_cases[400:505],
      ylab='Observation Value', 
      xlab='Time', 
      col="blue", 
-     main = 'Rolling Window ASE Over Time'
+     main = 'Rolling Window ASE for the Previous 141 Time Periods'
      )
 par(new = T)
 plot(newASE[400:505], 
@@ -230,7 +231,13 @@ legend("topright",
 
 Ideally, for the rolling window ASE chart above, we would want to see a low and steady ASE value (red line) as compared to the observed values (blue line). This would indicate that the model did a good job of predicting most, if not all, the observed values. Spikes in the ASE value represent observed values that were not predicted well, areas of large error.
 
-## Candidate Model 2 (NOT SURE IF THIS IS EXTRA WORK NOT ASKED FOR IN THE BRIEF. CONSIDER REMOVING.)
+We will use the median rolling window ASE value to compare performance.
+
+**section here about why median rolling window ASE and not single ASE, or mean rolling window ASE. Maybe use histogram of rolling window ASE values to make your point.**
+
+Model 1 has a median rolling window ASE value of 11.13.
+
+## Candidate Model 2 - ARIMA(1,2,1)
 ***
 
 #### ACF and Spectral Density
@@ -249,7 +256,6 @@ Additionaly, when looking at the spectral density, which helps identify the freq
 
 These observations support the conclusion of non-stationarity and suggest we can use various transformations to stationarize the data.
 
-
 ```{r}
 par(mfrow = c(1,2))
 acf(ts_flu.percent_positive_cases)
@@ -260,16 +266,38 @@ pacf(ts_flu.percent_positive_cases)
 pacf(ts_flu.percent_positive_cases)
 ```
 
+We take the first difference of the data to see if that transformation yields stationary data. After taking the first difference the realizations still appear to have some pattern to it and most of the autocorrelations are outside the significance bands.
+
+```{r}
+# take the first difference of the data
+first_diff <- artrans.wge(ts_flu.percent_positive_cases, 1)
+```
+
+Taking the second difference of the data yields a realization that looks like white noise and fewer lags outside the significance bands suggesting stationarized data.
+
+```{r}
+second_diff <- artrans.wge(first_diff, 1)
+```
+
+
+```{r}
+acf(second_diff)
+```
+
+
+We then estimate the parameters of the stationarized data with `aic5.wge`.
+
+```{r}
+formattable(aic5.wge(second_diff, type = "aic"))
+```
 
 
 
+```{r}
+formattable(aic5.wge(second_diff, type = "bic"))
+```
 
-
-
-
-
-
-
+Both the AIC and BIC suggest an ARIMA (1,2,1) model where p=1, d=2, and q=1. When the parameters are estimated using 
 
 
 
