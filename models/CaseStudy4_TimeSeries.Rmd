@@ -149,7 +149,7 @@ params <- est.arma.wge(ts_flu.percent_positive_cases, p=3, q=1)
 invisible(factor.wge(phi=params$theta))
 ```
 
-Next, we plot the 4-week forecast with upper and lower confidence limits. 
+Next, we plot the 8-week forecast with upper and lower confidence limits. 
 
 ```{r}
 f = fore.aruma.wge(ts_flu.percent_positive_cases,
@@ -279,13 +279,17 @@ Taking the second difference of the data yields a realization that looks like wh
 second_diff <- artrans.wge(first_diff, 1)
 ```
 
+```{r}
+plotts.sample.wge(second_diff, arlimits = TRUE)
+```
 
+The first few lags appear a little suspicious, and should cause concern in regards to a white noise diagnosis.
 ```{r}
 acf(second_diff)
 ```
 
 
-We then estimate the parameters of the stationarized data with `aic5.wge`.
+We then estimate the parameters of the differenced data with `aic5.wge`.
 
 ```{r}
 formattable(aic5.wge(second_diff, type = "aic"))
@@ -297,7 +301,58 @@ formattable(aic5.wge(second_diff, type = "aic"))
 formattable(aic5.wge(second_diff, type = "bic"))
 ```
 
-Both the AIC and BIC suggest an ARIMA (1,2,1) model where p=1, d=2, and q=1. When the parameters are estimated using 
+Both the AIC and BIC suggest an ARIMA (1,2,1) model where p=1, d=2, and q=1. When the parameters are estimated  
+
+```{r}
+params <- est.arma.wge(second_diff, p=1, q=1)
+invisible(factor.wge(phi=params$theta))
+```
+
+The ACF plot shows lag 6 outside the confidence bands. However, at a 95% confidence level we would expect 1 out of 20 lags to be outside the bands. Therefore, the ACF plot here does not raise any concerns about the residuals being white noise.
+```{r}
+# Check for white residuals
+plotts.sample.wge(params$res, arlimits = TRUE)  # All sample autocorrelations appear "white", i.e., under limit lines.
+```
+
+We use the Ljung-Box to test the autocorrelations as a group. If at least one autocorrelation is not zero then we don’t have white noise. The *p*-value is less than 0.05 and we conclude that there is white noise.
+
+
+```{r}
+ljung.wge(params$res, p = 1, q = 1)  # pval is < 0.05 and we reject the null hypothesis
+```
+
+As a second check, we use a different K-value, which yields  a *p*-value greater than 0.05
+```{r}
+# second check with different K-value
+ljung.wge(params$res, p = 1, q = 1, K = 48)  # pval is > 0.05 and we fail to reject the null hypothesis
+# Conclusion: Residuals for stationary ARMA(1,1) fit appear to be "white".
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
