@@ -10,12 +10,13 @@ output:
 
 ```{r setup, include=FALSE}
 library(rmdformats)
-library(tidyverse)  # data manipulaiton
+library(tidyverse)     # data manipulaiton
 library(data.table)
-library(tswge)  # Time series package
-library(tseries)  # for Dickey-Fuller test 
-library(formattable)  # for table formatting
-knitr::opts_chunk$set(echo = FALSE,
+library(tswge)         # Time series package
+library(tseries)       # for Dickey-Fuller test 
+library(orcutt)        # for Cochrane-Orcutt test
+library(formattable)   # for table formatting
+knitr::opts_chunk$set(echo = TRUE,
                prompt = FALSE,
                tidy = TRUE,
                comment = NA,
@@ -72,37 +73,59 @@ FluNetReport$wk_date.start <- as.Date(FluNetReport$wk_date.start, "%m/%d/%y")
 ts_flu.percent_positive_cases <- ts(FluNetReport[ ,5])
 ```
 
+```{r smaller_sample}
+# get a smaller sample using only the most recent five years of data (most recent 260 weeks)
+most_recent_5_years.flu_percent_positive_cases <- FluNetReport %>% 
+  slice(tail(row_number(), 260))
+
+# convert to time series object
+ts_most_recent_5_years.flu_percent_positive_cases <- ts(most_recent_5_years.flu_percent_positive_cases[ ,5])
+
+# plot the data
+plotts.sample.wge(ts_most_recent_5_years.flu_percent_positive_cases)
+```
+
+
+
 ```{r fig.height=4}
-plot(ts_flu.percent_positive_cases, 
+plot(ts_most_recent_5_years.flu_percent_positive_cases, 
         main=c(paste("Weekly Incidence Rate of Flu in the United States"), 
                paste("from October 04, 2010 through June 07, 2020")),
         xlab="Week",
         ylab="Percent Positive Cases")
 ```
 
-  Per the plots below
+#### (Need to talk about stationarity here and the conditions required for stationarity)
   
-  Condition 1: The mean does not appear to depend on time. We can see that there is some cyclic behavior in the realizations. The value tends to be lower on or about every 50th time point. If we were given another realizaton, it is possible we could observe similar highs and lows
+From a visual inspection it is difficult to determine if the mean is constant over time. If the mean were constant over time then every time period would have the same mean, i.e., the mean for December is the same for every . Below is a plot of mean positive rates for every week of the year. The plot clearly shows there are weekly differences.
+
+```{r}
+by_week <- most_recent_5_years.flu_percent_positive_cases %>% 
+  select(Week, total_flu_cases.percent_positive) %>% 
+  group_by(Week)
   
-  Condition 2: From a visual inspection it is difficult to determine if the variance is finite and does not depend on time. 
-  
-  Condition 3: The correlation between data points (covariance) only depends on how far apart they are in time and not where they are in time (i.e., contstant autocovariance). 
-  
+mean_rate <- by_week %>% summarise(mean_flu_positive_rate = mean(total_flu_cases.percent_positive))
+
+plot(mean_rate$Week,mean_rate$mean_flu_positive_rate, type = "o", main = "Mean Weekly Flu Positive Rate \n  15 June 2015 through 01 June 2020", xlab = "Week", ylab = "Mean Rate")
+
+```
+
+
 ```{r}
 # plot the data
 invisible(plotts.sample.wge(ts_flu.percent_positive_cases))
 ```
 
-The ACF plots below split the data to see if the autocorrelations (autocovariance) change over time. Autocorrelations that change over time would imply a non-stationary time series. Comparing the first half of the data to the second half of the data shows the ACFs are nearly identical. This suggests the autocovariance of the data is constant over time.
+The correlation between data points (covariance) only depends on how far apart they are in time and not where they are in time (i.e., contstant autocovariance). The ACF plots below split the data in half to see if the autocorrelations (autocovariance) change over time. Autocorrelations that change over time would imply a non-stationary time series. Comparing the first half of the data to the second half of the data shows the ACFs are nearly identical. This suggests the autocovariance of the data is constant over time.
 
 ```{r}
 # to compare the ACF structure of the first half of the data to the second half.
 par(mfrow = c(1,2))
-acf(ts_flu.percent_positive_cases[1:252])
-acf(ts_flu.percent_positive_cases[253:505])
+acf(ts_most_recent_5_years.flu_percent_positive_cases[1:130])
+acf(ts_most_recent_5_years.flu_percent_positive_cases[131:260])
 ```
 
-There appears to be cyclic behavior in the data, which could imply seasonality and a non-stationary process. However, time series data with cyclic behavior and no trend or seasonality is considered stationary if the cycles are not of a fixed length. Per the realization plot above and Table 1 below, there does not appear to be a trend, and it is evident that the cycles (measuring from peak to peak) are not of a fixed length. The number of weeks that elapse between peaks for the time series varies between 41 and 63 weeks. Intuitively, this makes sense as the peak of the flu "season" doesn't necessarily fall on the same week or month every year. Therefore, from a visual inspection of the plots, the data appear to come from a stationary process. 
+There appears to be cyclic behavior in the data, which could imply seasonality and a non-stationary process. However, time series data with cyclic behavior and no trend or seasonality is considered stationary if the cycles are not of a fixed length. Per the realization plot above and Table 1 below, there does not appear to be a trend, and it is evident that the cycles (measuring from peak to peak) are not of a fixed length.  The number of weeks that elapse between peaks for the time series varies between 41 and 63 weeks. Intuitively, this makes sense as the peak of the flu "season" doesn't necessarily fall on the same week or month every year. Therefore, from a visual inspection of the plots, the data appear to come from a stationary process. 
 
 ##### Table 1: Flu Season  Peak Week
 
@@ -119,55 +142,80 @@ There appears to be cyclic behavior in the data, which could imply seasonality a
 | 2018-2019     | February 25, 2019     |                 9 |                        59 |          29.58% |
 | 2019-2020     | February 03, 2020     |                 6 |                        49 |          32.74% |
 
+###### Cochrane-Orcutt Test to Check for Trend
+
+To check if there is a trend, the Cochrane-Orcutt test is employed, which tests the hypothesis that there is no serial correlation in the residuals (i.e., no trend). The Cochrane-Orcutt test yields a *p*-value of 0.533 and fails to reject the null hypothesis, which suggests there is no trend.
+```{r}
+# Check for trend using Cochrane-Orcutt
+df <- most_recent_5_years.flu_percent_positive_cases[,c(2,5)]
+x <- ts_most_recent_5_years.flu_percent_positive_cases
+t = seq(1,260,1) 
+fit = lm(x~t, data = df)
+
+# Cochrane-Orcutt test
+cfit = cochrane.orcutt(fit)
+summary(cfit)
+```
+
 ###### Dickey-Fuller Test for Stationarity
 
 Employing an augmented Dickey-Fuller test is a more formal approach to check for stationarity. An augmented Dickey-Fuller test helps determine if one or more seasonal factors should be included in the model and tests the null hypothesis that the autoregressive model has a root outside of the unit circle. The test depends on failing to reject the null hypothesis to decide whether there is a unit root present. However, failing to reject the null hypothesis is not evidence that a unit root (i.e., seasonal factor) exists. 
 
-A *p*-value > 0.5 for the augmented Dickey-Fuller test fails to reject the null hypothesis, which means that a unit root, or one or more seasonal factors, may be present. In the case of this data, the augmented Dickey-Fuller test yields a *p*-value of 0.01, suggesting there are no seasonal factors present and validating the initial visual inspection of the data.
+A *p*-value > 0.5 for the augmented Dickey-Fuller test fails to reject the null hypothesis, which means that a unit root, or one or more seasonal factors, may be present. In the case of this data, the augmented Dickey-Fuller test rejects the null hypothesis with a *p*-value of 0.01, suggesting there are no seasonal factors present and validating the initial visual inspection of the data.
 
-Per the initial visual inspection and Dickey-Fuller test, the data for the first model will be assumed to be stationary with no trend and no seasonal factors.
+Per the initial visual inspection, the Cochrane-Orcutt test, and the Dickey-Fuller test, the data for the first model will be assumed to be stationary with no trend and no seasonal factors.
+
 ```{r}
 # Check for stationarity using the Dickey-Fuller test
-adf.test(ts_flu.percent_positive_cases)  
+adf.test(ts_most_recent_5_years.flu_percent_positive_cases)  
 ```
 
-## Candidate Model 1 - ARMA(3,1)  
+##### Model Selection Methodology  
+
+The Akaike Information Criterion (AIC) and the Bayesian Information Criterion (BIC) are used in this case study to select candidate models. The AIC and the BIC are measures that score a model based on its log-likelihood and complexity. The AIC aims to reduce the white noise variance in the model and penalizes models that add additional terms. The BIC is concurrently employed as the AIC tends to select higher order models, i.e., it may propose selecting an ARMA (2,2) over ARMA (1,1) model. The BIC imposes stronger penalties for increasing the orders of $p$ and $q$ and will tend to select models with fewer parameters.  Lower values for AIC and BIC are preferred.
+
+## Candidate Model 1 - ARMA(4,1)  
 ***
 For this candidate model, we will assume that the realization is stationary. We use `aic5.wge` to identify the models with the lowest AIC and BIC. The AIC identifies a potential ARMA(3,2) model. 
 ```{r}
-formattable(invisible(aic5.wge(ts_flu.percent_positive_cases, type = 'aic')))
+formattable(invisible(aic5.wge(ts_most_recent_5_years.flu_percent_positive_cases, type = 'aic')))
 ```
 
-The BIC identifies a potential ARMA(3,1) model.
+The BIC identifies a potential ARMA(4,1) model.
 ```{r}
-formattable(aic5.wge(ts_flu.percent_positive_cases, type = 'bic'))
+formattable(aic5.wge(ts_most_recent_5_years.flu_percent_positive_cases, type = 'bic'))
 ```
 
-We use this to estimate paramters using p=3 and q=1. The model takes on the form $(1-2.44B+1.93B^2-0.48B^3)X_t = (1-0.94B)a_t, \;\;\;\sigma_a^2 = 2.14\;$.
+Both the AIC and BIS methods select an ARMA (4,1) model as the best structure for the data.
+
 ```{r}
-params <- est.arma.wge(ts_flu.percent_positive_cases, p=3, q=1)
-invisible(factor.wge(phi=params$theta))
+params <- est.arma.wge(ts_most_recent_5_years.flu_percent_positive_cases, p=4, q=1)
 ```
 
-Next, we plot the 8-week forecast with upper and lower confidence limits. 
+A plot of the forecast for the last year of data, 52 weeks, suggests the model doesn't do a very good job of predicitng the next year's worth of data. 
 
 ```{r}
-f = fore.aruma.wge(ts_flu.percent_positive_cases,
+f = fore.aruma.wge(ts_most_recent_5_years.flu_percent_positive_cases,
                    phi=params$phi, 
                    theta=params$theta, 
-                   n.ahead = 8, 
-                   lastn = FALSE, 
+                   n.ahead = 52, 
+                   lastn = TRUE, 
                    plot=TRUE, 
                    limits=TRUE)
 
 ```
 
-We will use the average squared error (ASE) to measure the goodness of fit of the model (performance). A low ASE value means the model made few prediction errors.
+##### Performance Metric  
 
-**More explanation goes in here about how a rolling window ASE is better than a single ASE and how the rolling window ASE is similar to using a training and validation set.** 
-The training dataset will be at least 364 observations (approximately 80% of the data), allowing for at least 7 years of data. The remaining observations will be used as the forecast horizon, or validation set. 
+We will use the average squared error (ASE) to measure the goodness of fit of the model (performance). The ASE measure takes the sum of the square of the difference between the forecasted, or predicted, value, $\hat X_i$, and the actual value, $X_i$, and takes the average for $n$ number of observations. A lower ASE value indicates the model made fewer forecast errors.
 
-The rolling window ASE shows a spike around observations 22, 80, and 90 indicating it did not do a good job of predicting those observations. There are also several other spikes in the ASE where the model did not predict the observed value very well.
+$$ASE = \frac{\sum(\hat X_i - X_i)^2}{n}$$
+
+The training dataset will be comprised of at least 130 weeks, or 2.5 years of data. The forecast horizon will be used as the validation set. 
+
+**More explanation goes in here about how a rolling window ASE is better than a single ASE.** 
+
+Ideally, for the rolling window ASE charts below, a low and steady ASE value (red line) as compared to the observed values (blue line) is preferred. This would indicate that the model did a good job of predicting most, if not all, the observed values. Spikes in the ASE value represent observed values that were not predicted well, areas of large error.
 
 ```{r}
 #Code from Prof. Sadler's Time Series Course Unit 7
@@ -178,19 +226,16 @@ thetas = params$theta
 s  = 0
 d  = 0
 
-trainingSize = 364 # this is the window size (we used a window of 4 years or 208 weeks)
-horizon = 8
-ASEHolder = numeric() # this is an empty variable that will hold all the ASE values
+trainingSize = 130 # this is the window size (we used a window of 2.5 years or 130 weeks)
+horizon = 2 # we forecast out 2 weeks
+ASEHolder = numeric() # this is an empty varible that will hold all the ASE values
 
-for( i in 1:(505-(trainingSize + horizon) + 1))
+for( i in 1:(260-(trainingSize + horizon) + 1))
 {
-  forecasts = fore.aruma.wge(ts_flu.percent_positive_cases[i:(i+(trainingSize-1))], 
-                             phi = phis, 
-                             theta = thetas, 
-                             s = s, 
-                             d = d, 
-                             n.ahead = horizon,plot=FALSE)
-  ASE = mean((ts_flu.percent_positive_cases[(trainingSize+i):(trainingSize+ i + (horizon) - 1)] - forecasts$f)^2)
+  forecasts = fore.aruma.wge(ts_most_recent_5_years.flu_percent_positive_cases[i:(i+(trainingSize-1))], 
+                             phi = phis, theta = thetas, 
+                             s = s, d = d, n.ahead = horizon,plot=FALSE)
+  ASE = mean((ts_most_recent_5_years.flu_percent_positive_cases[(trainingSize+i):(trainingSize+ i + (horizon) - 1)] - forecasts$f)^2)
   ASEHolder[i] = ASE
 }
 
@@ -200,159 +245,362 @@ median_windowed_ASE = median(ASEHolder)
 median_windowed_ASE
 
 # visualization of windowed ASE over time
-newASE = c(rep(NA,410),ASEHolder)
+newASE = c(rep(NA, 131), ASEHolder) # this plots ASE from week 131 onward
 
 par(mar = c(5,5,2,5))
-plot(ts_flu.percent_positive_cases[400:505], 
-     type="l", 
-     ylab='Observation Value', 
-     xlab='Time', 
-     col="blue", 
-     main = 'Rolling Window ASE for the Previous 141 Time Periods'
+plot(ts_most_recent_5_years.flu_percent_positive_cases,type="l",ylab='Observation Value',xlab='Time',col="blue",main = 'Rolling Window ASE Over Time \n(2-week forecast)'
      )
 par(new = T)
-plot(newASE[400:505], 
-     type="l", 
-     axes=F, 
-     ylab=NA, 
-     xlab=NA, 
-     col="red"
+plot(ASEHolder,type="l",lty=2,axes=F,ylab=NA,xlab=NA,col="red"
      )
 axis(side=4)
 mtext(side=4, line=3, 'ASE')
-legend("topright",
-       legend=c("Obs. Value","ASE"),
-       lty=c(1,2), 
-       col=c("blue","red"), 
-       cex=.6
+legend("topleft",legend=c("Obs. Value","ASE"),lty=c(1,2),col=c("blue","red"),cex=.6
        )
 
 ```
 
-Ideally, for the rolling window ASE chart above, we would want to see a low and steady ASE value (red line) as compared to the observed values (blue line). This would indicate that the model did a good job of predicting most, if not all, the observed values. Spikes in the ASE value represent observed values that were not predicted well, areas of large error.
+```{r}
+#Code from Prof. Sadler's Time Series Course Unit 7
 
-We will use the median rolling window ASE value to compare performance.
+#Model 1
+phis = params$phi
+thetas = params$theta
+s  = 0
+d  = 0
+
+trainingSize = 130 # this is the window size (we used a window of 2.5 years or 130 weeks)
+horizon = 4 # we forecast out 1 months, or 4 weeks
+ASEHolder = numeric() # this is an empty varible that will hold all the ASE values
+
+for( i in 1:(260-(trainingSize + horizon) + 1))
+{
+  forecasts = fore.aruma.wge(ts_most_recent_5_years.flu_percent_positive_cases[i:(i+(trainingSize-1))], 
+                             phi = phis, theta = thetas, 
+                             s = s, d = d, n.ahead = horizon,plot=FALSE)
+  ASE = mean((ts_most_recent_5_years.flu_percent_positive_cases[(trainingSize+i):(trainingSize+ i + (horizon) - 1)] - forecasts$f)^2)
+  ASEHolder[i] = ASE
+}
+
+WindowedASE = mean(ASEHolder)
+WindowedASE
+median_windowed_ASE = median(ASEHolder)
+median_windowed_ASE
+
+# visualization of windowed ASE over time
+#newASE = c(rep(NA, 131), ASEHolder) # this plots ASE from week 131 onward
+
+par(mar = c(5,5,2,5))
+plot(ts_most_recent_5_years.flu_percent_positive_cases,type="l",ylab='Observation Value',xlab='Time',col="blue",main = 'Rolling Window ASE Over Time \n(4-week forecast)'
+     )
+par(new = T)
+plot(ASEHolder,type="l",lty=2,axes=F,ylab=NA,xlab=NA,col="red"
+     )
+axis(side=4)
+mtext(side=4, line=3, 'ASE')
+legend("topleft",legend=c("Obs. Value","ASE"),lty=c(1,2),col=c("blue","red"),cex=.6
+       )
+
+```
+
+
+```{r}
+#Code from Prof. Sadler's Time Series Course Unit 7
+
+#Model 1
+phis = params$phi
+thetas = params$theta
+s  = 0
+d  = 0
+
+trainingSize = 130 # this is the window size (we used a window of 2.5 years or 130 weeks)
+horizon = 12 # we forecast out 3 months, or 12 weeks
+ASEHolder = numeric() # this is an empty varible that will hold all the ASE values
+
+for( i in 1:(260-(trainingSize + horizon) + 1))
+{
+  forecasts = fore.aruma.wge(ts_most_recent_5_years.flu_percent_positive_cases[i:(i+(trainingSize-1))], 
+                             phi = phis, theta = thetas, 
+                             s = s, d = d, n.ahead = horizon,plot=FALSE)
+  ASE = mean((ts_most_recent_5_years.flu_percent_positive_cases[(trainingSize+i):(trainingSize+ i + (horizon) - 1)] - forecasts$f)^2)
+  ASEHolder[i] = ASE
+}
+
+WindowedASE = mean(ASEHolder)
+WindowedASE
+median_windowed_ASE = median(ASEHolder)
+median_windowed_ASE
+
+# visualization of windowed ASE over time
+newASE = c(rep(NA, 131), ASEHolder) # this plots ASE from week 131 onward
+
+par(mar = c(5,5,2,5))
+plot(ts_most_recent_5_years.flu_percent_positive_cases,type="l",ylab='Observation Value',xlab='Time',col="blue",main = 'Rolling Window ASE Over Time \n(3-month forecast)'
+     )
+par(new = T)
+plot(ASEHolder,type="l",lty=2,axes=F,ylab=NA,xlab=NA,col="red"
+     )
+axis(side=4)
+mtext(side=4, line=3, 'ASE')
+legend("topleft",legend=c("Obs. Value","ASE"),lty=c(1,2),col=c("blue","red"),cex=.6
+       )
+
+```
+
+```{r}
+#Code from Prof. Sadler's Time Series Course Unit 7
+
+#Model 1
+phis = params$phi
+thetas = params$theta
+s  = 0
+d  = 0
+
+trainingSize = 130 # this is the window size (we used a window of 2.5 years or 130 weeks)
+horizon = 26 # we forecast out 6 months, or 26 weeks
+ASEHolder = numeric() # this is an empty varible that will hold all the ASE values
+
+for( i in 1:(260-(trainingSize + horizon) + 1))
+{
+  forecasts = fore.aruma.wge(ts_most_recent_5_years.flu_percent_positive_cases[i:(i+(trainingSize-1))], 
+                             phi = phis, theta = thetas, 
+                             s = s, d = d, n.ahead = horizon,plot=FALSE)
+  ASE = mean((ts_most_recent_5_years.flu_percent_positive_cases[(trainingSize+i):(trainingSize+ i + (horizon) - 1)] - forecasts$f)^2)
+  ASEHolder[i] = ASE
+}
+
+WindowedASE = mean(ASEHolder)
+WindowedASE
+median_windowed_ASE = median(ASEHolder)
+median_windowed_ASE
+
+# visualization of windowed ASE over time
+newASE = c(rep(NA, 131), ASEHolder) # this plots ASE from week 131 onward
+
+par(mar = c(5,5,2,5))
+plot(ts_most_recent_5_years.flu_percent_positive_cases,type="l",ylab='Observation Value',xlab='Time',col="blue",main = 'Rolling Window ASE Over Time \n(6-month forecast)'
+     )
+par(new = T)
+plot(ASEHolder,type="l",lty=2,axes=F,ylab=NA,xlab=NA,col="red"
+     )
+axis(side=4)
+mtext(side=4, line=3, 'ASE')
+legend("topleft",legend=c("Obs. Value","ASE"),lty=c(1,2),col=c("blue","red"),cex=.6
+       )
+
+```
+
+From the rolling window ASE charts above and Table 2 below the performance of the model deteriorates as the horizon increases.
 
 **section here about why median rolling window ASE and not single ASE, or mean rolling window ASE. Maybe use histogram of rolling window ASE values to make your point.**
 
-Model 1 has a median rolling window ASE value of 11.13.
+Table 2 below shows that the model does better at forecasting shorter horizons.  
 
-## Candidate Model 2 - ARIMA(1,2,1)
+##### Table 2: Rolling Window ASE
+
+| Forecast Horizon    | Mean Rolling Window ASE  | Median Rolling Window ASE  | 
+|:------------------- |:-----------------------: | :-------------------------:|
+| 2 weeks             |           5.446          |            0.769           |
+| 4 weeks             |          12.700          |            2.908           |
+| 3 months            |          37.913          |           21.630           |
+| 6 months            |          53.461          |           45.454           |
+
+
+
+## Candidate Model 2 - ARIMA(3,2,1) s=52
 ***
+The first candidate model didn't do a great job in terms of forecasting longer horizons. Taking a closer look at ACF and spectral densities 
+
+There is no clear upward or downward trend in the data; however, seasonal trend is present as evidenced by the cyclic behavior of the realizations. Seasonality causes the time series to be non-stationary because the mean of the data is not constant. The mean value at a point in time may be different that the mean value at a different point in time within a particualr season/cycle (e.g., sales of frozen turkeys are every year around November and December than the rest of the year).
 
 #### ACF and Spectral Density
 
-The autocorrelations exhibit sinusoidal ACF behavior converging to zero, which is characteristic of complex conjugate roots from an AR(2) process.
- 
+The autocorrelations exhibit sinusoidal ACF behavior converging to zero, which is characteristic of complex conjugate roots and second order factors.
+
 ```{r fig.height = 4, fig.width = 12, fig.align = "center"}
 # plot the ACF and spectral densities
 #invisible allows the plot to print, but supresses the output
-invisible(acf(ts_flu.percent_positive_cases, lag.max = 400))
+invisible(acf(ts_most_recent_5_years.flu_percent_positive_cases, lag.max = 200))
+```
+
+
+Additionaly, when looking at the spectral density, which helps identify the frequency content of a time series, there is a significant peak near 0 suggesting complex roots and seasonality in the data. In the first spectral density plot there is a large peak near zero. When the truncation point is changed to 20, this peak is at approimately 0.01923, or 1/52, which indicates a period of 52 weeks, or one year. 
+
+```{r fig.height = 4, fig.width = 12, fig.align = "center"}
+# plot the ACF and spectral densities
+# invisible allows the plot to print, but supresses the output
 par(mfrow = c(1,2))
-invisible(parzen.wge(ts_flu.percent_positive_cases))
-invisible(parzen.wge(ts_flu.percent_positive_cases,trunc=400))
+invisible(parzen.wge(ts_most_recent_5_years.flu_percent_positive_cases))
+invisible(parzen.wge(ts_most_recent_5_years.flu_percent_positive_cases,trunc = 20))
 ```
-Additionaly, when looking at the spectral density, which helps identify the frequency content of a time series, there is a significant peak near 0 suggesting complex roots and seasonality in the data. In the first spectral density plot there is a large peak near zero. When the truncation point is changed to 400, this peak is at approimately 0.01923, or 1/52, which indicates a period of 52 weeks, or one year. 
 
-These observations support the conclusion of non-stationarity and suggest we can use various transformations to stationarize the data.
+These observations support the conclusion of non-stationarity and suggest we can take a seasonal difference to stationarize the data.
 
 ```{r}
 par(mfrow = c(1,2))
-acf(ts_flu.percent_positive_cases)
-pacf(ts_flu.percent_positive_cases)
+acf(ts_most_recent_5_years.flu_percent_positive_cases)
+pacf(ts_most_recent_5_years.flu_percent_positive_cases)
 ```
+
+
+Overfit the data
 
 ```{r}
-pacf(ts_flu.percent_positive_cases)
+# Factor table for annual seasonal model (1-B), s=1
+factor.wge(c(rep(0, 1), 1)) 
 ```
 
-We take the first difference of the data to see if that transformation yields stationary data. After taking the first difference the realizations still appear to have some pattern to it and most of the autocorrelations are outside the significance bands.
 
 ```{r}
-# take the first difference of the data
-first_diff <- artrans.wge(ts_flu.percent_positive_cases, 1)
+# Overfit the data
+#est.ar.wge(ts_most_recent_5_years.flu_percent_positive_cases, p=55, type='burg')
 ```
+
+The only factor of $(1-B^52)$ that has the behavior we expected is $(1-1.9848B+B^2)$. This suggests that using $Y_t = (1-1.9848B+B^2)X_t$ as the stationarizing transformation is appropriate.
+
+
+A non-seasonal difference is taken to see if that transformation yields stationary data. After taking that seasonal difference the realizations still appear to have some pattern and most of the autocorrelations are outside the significance bands.
+
+```{r}
+# take the first difference (1 - B)^1 of the data
+d1 <- artrans.wge(ts_flu.percent_positive_cases, 1)
+```
+
+Seasonality is suspected and makes sense for the data. Factors from overfit factor tables can be compared to the non-stationary factors $(1-B^s)$, where $s$ is the seasonal term. If non-stationary factors match with the factors of $(1-B^s)$ well, then the data can be transformed by the $(1-B^s)$ factor.
+
+The factor tables suggest there is an annual seasonal component (s=1). 
 
 Taking the second difference of the data yields a realization that looks like white noise and fewer lags outside the significance bands suggesting stationarized data.
 
 ```{r}
-second_diff <- artrans.wge(first_diff, 1)
+# transform differenced data by (1 - B^1), i.e., take an annual seasonal difference (s=1)
+d2 = artrans.wge(d1, 1) # here we're taking the differenced data, d1, and transforming it again
+```
+
+
+```{r}
+par(mfrow = c(1,2))
+acf(d2)
+pacf(d2)
 ```
 
 ```{r}
-plotts.sample.wge(second_diff, arlimits = TRUE)
+y.52 = artrans.wge(d2, phi.tr = c(rep(0,51),1))
 ```
 
-The first few lags appear a little suspicious, and should cause concern in regards to a white noise diagnosis.
 ```{r}
-acf(second_diff)
+acf(y.52)
 ```
 
 
+```{r}
+pacf(y.52)
+```
+
+
+
+```{r}
+aic5.wge(y.52, p = 0:13, q = 0:5, type = 'aic')  # this chooses an ARMA(3,5) model
+```
+
+```{r}
+aic5.wge(y.52, p = 0:13, q = 0:5, type = 'bic')  # this chooses an ARMA(3,1) model
+```
+
+BIC selects ARMA(3,1) model.
+  
 We then estimate the parameters of the differenced data with `aic5.wge`.
 
 ```{r}
-formattable(aic5.wge(second_diff, type = "aic"))
+estimated_parameters.d2_s52 <- est.arma.wge(y.52, p=3, q=1)
 ```
 
 
+
+ARMA($p,\,q$) models assume that the noise component, $a_t$, of the model is white noise. If the residuals are not white noise, this suggests that further modeling may be necessary to better explain the behavior in the data. We employ a visual inspection and a more formal test to determine if the residuals are white noise.
+
+##### Visual Inspection of Residuals
+
+The residuals look random per the realization plot, suggesting white noise. 
+```{r}
+# check residuals for white noise
+plotts.sample.wge(estimated_parameters.d2_s52$res)
+```
+The plot of the sample autocorrelations shows lag 6 and lag 9 outside the confidence bands. However, at a 95% confidence level we would expect 1 out of every 20 lags to be outside the bands. Therefore, per a visual inspection, the residuals appear to be white noise.
+```{r}
+acf(estimated_parameters.d2_s52$res, lag.max = 40)
+```
+
+#####  Ljung-Box Test for residuals  
+
+A visual inspection looks at each autocorrelation separately. The Ljung-Box test is used to test the autocorrelations as a group to determine if the residuals are white noise. It tests the null hypothesis ($H_0$) that all autocorrelations ($\rho$) are zero (i.e., the residuals are white noise). 
+$$ H_0: \rho_1 = \rho_2 = ... = \rho_K = 0$$
+
+If at least one autocorrelation is not zero, then  white noise is not present. 
+$$H_a: at\;least\;one\; \rho_k \neq 0, \, for\,\, 1 \leq k \leq K$$
+In the `tswge` package, the residuals are found in the output variable `$res`. These are calculated within the functions `est.ar.wge` and `est.arma.wge`. 
+
+The Ljung-Box test yeilds $p > 0.05$, which fails to reject the null hypothesis and suggests the residuals are white noise.
 
 ```{r}
-formattable(aic5.wge(second_diff, type = "bic"))
+ljung.wge(estimated_parameters.d2_s52$res, p = 3, q = 1)  # pval is < 0.05 and we reject the null hypothesis
 ```
-
-Both the AIC and BIC suggest an ARIMA (1,2,1) model where p=1, d=2, and q=1. When the parameters are estimated  
-
-```{r}
-params <- est.arma.wge(second_diff, p=1, q=1)
-invisible(factor.wge(phi=params$theta))
-```
-
-The ACF plot shows lag 6 outside the confidence bands. However, at a 95% confidence level we would expect 1 out of 20 lags to be outside the bands. Therefore, the ACF plot here does not raise any concerns about the residuals being white noise.
-```{r}
-# Check for white residuals
-plotts.sample.wge(params$res, arlimits = TRUE)  # All sample autocorrelations appear "white", i.e., under limit lines.
-```
-
-We use the Ljung-Box to test the autocorrelations as a group. If at least one autocorrelation is not zero then we don’t have white noise. The *p*-value is less than 0.05 and we conclude that there is white noise.
-
-
-```{r}
-ljung.wge(params$res, p = 1, q = 1)  # pval is < 0.05 and we reject the null hypothesis
-```
-
-As a second check, we use a different K-value, which yields  a *p*-value greater than 0.05
+As a second check, we use a different K-value, which yields $p > 0.05$ also suggesting the residuals are white noise.
 ```{r}
 # second check with different K-value
-ljung.wge(params$res, p = 1, q = 1, K = 48)  # pval is > 0.05 and we fail to reject the null hypothesis
+ljung.wge(estimated_parameters.d2_s52$res, p = 3, q = 1, K = 48)  # pval is > 0.05 and we fail to reject the null hypothesis
 # Conclusion: Residuals for stationary ARMA(1,1) fit appear to be "white".
 ```
 
+Per a visual inspection and the Ljung-Box test, the residuals are white noise.
+
+```{r}
+#Model 2
+phis = params$phi
+thetas = params$theta
+s  = 52
+d  = 2
+
+trainingSize = 130 # this is the window size (we used a window of 2.5 years or 130 weeks)
+horizon = 2 # we forecast out 2 weeks
+ASEHolder = numeric() # this is an empty varible that will hold all the ASE values
+
+for( i in 1:(260-(trainingSize + horizon) + 1))
+{
+  forecasts = fore.aruma.wge(ts_most_recent_5_years.flu_percent_positive_cases[i:(i+(trainingSize-1))], 
+                             phi = phis, theta = thetas, 
+                             s = s, d = d, n.ahead = horizon,plot=FALSE)
+  ASE = mean((ts_most_recent_5_years.flu_percent_positive_cases[(trainingSize+i):(trainingSize+ i + (horizon) - 1)] - forecasts$f)^2)
+  ASEHolder[i] = ASE
+}
+
+WindowedASE = mean(ASEHolder)
+WindowedASE
+median_windowed_ASE = median(ASEHolder)
+median_windowed_ASE
+
+# visualization of windowed ASE over time
+newASE = c(rep(NA, 131), ASEHolder) # this plots ASE from week 131 onward
+
+par(mar = c(5,5,2,5))
+plot(ts_most_recent_5_years.flu_percent_positive_cases,type="l",ylab='Observation Value',xlab='Time',col="blue",main = 'Rolling Window ASE Over Time \n(2-week forecast)'
+)
+par(new = T)
+plot(ASEHolder,type="l",lty=2,axes=F,ylab=NA,xlab=NA,col="red"
+     )
+axis(side=4)
+mtext(side=4, line=3, 'ASE')
+legend("topleft",legend=c("Obs. Value","ASE"),lty=c(1,2),col=c("blue","red"),cex=.6
+       )
+
+```
 
 
 
 
+## Conclusion
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+When fitting an ARMA model to a set of data, the goal is to explain as much of the variability in the data as is reasonably possible.
 
 
 
