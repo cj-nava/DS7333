@@ -96,6 +96,12 @@ plot(ts_most_recent_5_years.flu_percent_positive_cases,
 ```
 
 #### (Need to talk about stationarity here and the conditions required for stationarity)
+
+To estimate means, variance and autocorrelations from a single realization requires us to meet three stationarity conditions. This means the average number of positive flu cases across our times does not depend on time, or change over time. This would mean that if we repeated the same year with different realizations, those realizations would have the same mean.  If we can safely assume a constant mean across all years we can use all the observations to estimate our mean. Similarly if all years have a finite and constant variance across our years we can use all the data to estimate the common variance. The last requirements requires the correlation between data points to be dependent on how far apart they are in time and not where they are in our 5 year timespan. 
+
+* Mean is not time dependent
+* Variance is not time dependent
+* Serial dependence
   
 From a visual inspection it is difficult to determine if the mean is constant over time. If the mean were constant over time then every time period would have the same mean, i.e., the mean for December is the same for every . Below is a plot of mean positive rates for every week of the year. The plot clearly shows there are weekly differences.
 
