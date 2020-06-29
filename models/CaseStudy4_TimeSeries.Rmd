@@ -107,13 +107,13 @@ mtext(side=4, line=3, 'ASE')
 legend("topleft", legend=c("Specimens Processed", "Percent Positive"), lty=c(1, 1), col=c("black", "orange"), cex=.6)
 ```
 
-Statistics that allow time series data to be accruately described at all time points require the time series to be stationary. A stationary time series is one whose statistical properties such as mean, variance, autocorrelation, etc. are all constant over time. For a time series to be considered stationary the following conditions must be met:
+Statistics that allow time series data to be accurately described at all time points require the time series to be stationary. A stationary time series is one whose statistical properties such as mean, variance, autocorrelation, etc. are all constant over time. For a time series to be considered stationary the following conditions must be met:
 
 1. The mean does not depend on time.
 2. The variance is finite and does not depend on time.
 3. The correlation between data points only depends on how far apart they are in time and not where they are in time.
 
-To estimate means, variance and autocorrelations from a single realization requires us to meet three stationarity conditions. This means the average number of positive flu cases across our times does not depend on time, or change over time. This would mean that if we repeated the same year with different realizations, those realizations would have the same mean.  If we can safely assume a constant mean across all years we can use all the observations to estimate our mean. Similarly if all years have a finite and constant variance across our years we can use all the data to estimate the common variance. The last requirements requires the correlation between data points to be dependent on how far apart they are in time and not where they are in our 5 year timespan. 
+To estimate means, variance and autocorrelations from a single realization requires us to meet three stationarity conditions. This means the average number of positive flu cases across our times does not depend on time, or change over time. This would mean that if we repeated the same year with different realizations, those realizations would have the same mean.  If we can safely assume a constant mean across all years we can use all the observations to estimate our mean. Similarly if all years have a finite and constant variance across our years we can use all the data to estimate the common variance. The last requirement requires the correlation between data points to be dependent on how far apart they are in time and not where they are in our five year timespan. 
 
 From a visual inspection it is difficult to determine if the mean is constant over time. If the mean were constant over time then every time period would have the same mean, i.e., the mean for December is the same for every. Below is a plot of mean positive rates for every week of the year. The plot shows there are weekly differences in the mean, suggesting that the expected value of the time series depends on time. This raises an intial concern regarding stationarity, which will be addressed later.
 
@@ -157,7 +157,7 @@ ts.log_flu <- ts(log_data[ ,6], start=2010, frequency = 52)
 # plot the data
 plot(ts.log_flu, main=c(paste("Log-transformed Weekly Flu Cases in the U.S."), 
                paste("from June 15, 2015 through June 07, 2020")), xlab="Weeks", ylab="log of Positive Flu Cases")
-``````
+```
 
 A comparison of the ACF plots for the log-transformed data shows the first half is identical to the second half, which suggests constant autocovariance over time.
 ```{r}
@@ -208,7 +208,7 @@ From Table 1 below, it is evident that the cycles (measuring from peak to peak) 
 | 2019-2020     | February 03, 2020     |                 6 |                        49 |          32.74% |
 
 
-To give some validation to the initial assesments of the data lacking seasonality and trend, a more formal approach to test for stationarity an trend are explored.
+To give some validation to the initial assesments of the data lacking seasonality and trend, a more formal approach to test for stationarity and trend is explored.
 
 ##### Dickey-Fuller Test for Stationarity
 
@@ -321,14 +321,11 @@ $$ASE = \frac{\sum(\hat X_i - X_i)^2}{n}$$
 
 It should be noted that the ASE is a snapshot in time and can vary for the same data set depending on the size of the training data. A more stable approach it to use a rolling window ASE, where the training data is comprised of a "window" of observations (a window of time).
 
-We're taking that one model and sliding across the whole dataset and seeing how well it predicts the next $n$ observations as I slide that window across so
-
-
-This is a process similar to cross-validation, where nearly all of the data can be used to train and validate the model.
+Like cross-validation, we're taking that one model and sliding across the whole dataset and seeing how well it predicts the next $n$ observations. With the rolling window ASE method, we are not simply taking the last ASE observation from n prior periods. The rolling window characteristic loops through time horizons and averages the ASEs together, which can prove to be a more stable representation of the overall model ASE. For example, if there was some particularly odd behavior in the recent past of a time series, a single ASE could be misleading.
 
 The training dataset will be comprised of at least 130 weeks, or 2.5 years of data. The forecast horizon will be used as the validation set. 
 
-<mark>More explanation goes in here about how a rolling window ASE is better than a single ASE.<mark>
+Ideally, for the rolling window ASE charts below, a low and steady ASE value (red line) as compared to the observed values (blue line) is preferred. This would indicate that the model did a good job of predicting most, if not all, the observed values. Spikes in the ASE value represent observed values that were not predicted well, areas of large error.
 
 Ideally, for the rolling window ASE charts below, a low and steady ASE value (red line) as compared to the observed values (blue line) is preferred. This would indicate that the model did a good job of predicting most, if not all, the observed values. Spikes in the ASE value represent observed values that were not predicted well, areas of large error.
 
@@ -475,8 +472,6 @@ legend("topleft", legend=c("Obs. Value", "ASE"), lty=c(1, 2), col=c("blue", "red
 ```
 
 From the rolling window ASE charts above and Table 2 below the performance of the model deteriorates as the horizon increases.
-
-<mark>section here about why median rolling window ASE and not single ASE, or mean rolling window ASE. Maybe use histogram of rolling window ASE values to make your point.<mark>
 
 ##### Table 2: Rolling Window ASE
 
