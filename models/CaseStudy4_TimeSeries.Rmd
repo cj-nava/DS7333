@@ -482,7 +482,17 @@ median_rolling_window_ASE <- c(median_windowed_ASE.2_weeks, median_windowed_ASE.
 
 rolling.window.ASE <- data.frame(forecast_horizon, mean_rolling_window_ASE, median_rolling_window_ASE)
 
-rolling.window.ASE
+names(rolling.window.ASE)[names(rolling.window.ASE) == "forecast_horizon"] <- "Forecast Horizon"
+names(rolling.window.ASE)[names(rolling.window.ASE) == "mean_rolling_window_ASE"] <- "Rolling Window ASE (Mean)"
+names(rolling.window.ASE)[names(rolling.window.ASE) == "median_rolling_window_ASE"] <- "Rolling Window ASE (Median)"
+customGreen0 = "#DeF7E9"
+customGreen = "#71CA97"
+
+formattable(rolling.window.ASE, align =c("l","c","c"), list(
+  `Forecast Horizon` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
+  `Rolling Window ASE (Mean)`= color_tile(customGreen, customGreen0),
+  `Rolling Window ASE (Median)`= color_tile(customGreen, customGreen0)
+))
 ```
 
 
