@@ -18,7 +18,7 @@ library(purrr)
 library(ggplot2)
 library(VIM)
 library(SiZer)
-library(changepoint.np)
+#library(changepoint.np)
 ```
 
 ## Introduction
@@ -60,6 +60,8 @@ urlWomen <- c(
 
 ```
 
+
+
 ```{r,  results='hide'}
 # helper function that reads women URLs, then the table nodes marked with 'pre', and then splits on new lines.
 extractTable <- function(url) {
@@ -80,16 +82,16 @@ womenTable <- map(urlWomen, extractTable)
 map_int(womenTable, length)
 
 #compare [[1]] vs [[6]] of womenTable
-womenTable[[1]] # complete mess
-womenTable[[6]] # even line breaks
+womenTable[[1]] %>% head(.,20)  # complete mess
+womenTable[[6]] %>% head(.,20) # even line breaks
 
 # first entry of 1999
 # note its not performing line breaks
-str_sub(womenTable[[1]], 1, 210)
+str_sub(womenTable[[1]], 1, 210) %>% head(.,20)
 
 
 # validate we can force a split on new line breaks
-str_split(womenTable[[1]], '\\n')[[1]]
+str_split(womenTable[[1]], '\\n')[[1]] 
 
 # update womenTable
 str_split(womenTable[[1]], '\\n')[[1]] -> womenTable[[1]]
@@ -120,6 +122,9 @@ years <- 1999:2012
 womenTable <- map2(urlWomen, years, extractTable)
 
 ```
+
+
+
 
 ```{r}
 # validate row counts by year
@@ -185,6 +190,8 @@ extractVariables <- function(file, varNames =c("name", "home", "ag", "gun", "net
     invisible(Values)
   }
 ```
+
+
 
 ```{r,  results='hide'} 
 wfilenames <- paste("women/", 1999:2012, ".txt", sep = "")
@@ -268,6 +275,8 @@ extractVariables =
 womenResMat = lapply(womenFiles, extractVariables)
 
 ```
+
+
 
 ```{r}
 # recheck missing values
@@ -401,6 +410,8 @@ allWomen %>% ggplot() + geom_density(aes(x = age), alpha = 0.7,color="darkblue",
 mean(allWomen$age)
 ```
 
+
+
 ```{r}
 list_of_values = c('1999','2012')
 allWomen %>% filter(age > 7 & year == list_of_values) %>% ggplot() + geom_density(aes(x = age,group = factor(year), fill=factor(year), alpha = 0.7)) + ggtitle("Cherry Blossom Women - Age (1999 & 2012)") + labs(fill = "Year")
@@ -425,6 +436,8 @@ allWomen %>% group_by(year) %>% summarise(Attendance = n()) %>% na.omit %>% ggpl
 # womens average run time for all years
 allWomen %>% group_by(year) %>% summarise(`Average runTime` = mean(runTime, na.rm = T)) %>% ggplot() + geom_line(aes(x = year, y = `Average runTime`)) + ggtitle("Cherry Blossom Women Annual Run Time")
 ```
+
+
 
 ```{r}
 # womens average run time by age
