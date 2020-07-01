@@ -35,9 +35,7 @@ July 1, 2020
 
 The seasonal flu is a public health concern that takes a large effort to mitigate. Increased costs of medical care, loss of productivity, and death are all attributed to the disease each year. The average annual economic impact in the U.S. is estimated at approximately $11.2 billion.^1^
 
-As of June 25, 2020, preliminary estimates of the number of flu deaths for the 2019-2020 flu season range between 24,000 and 62,000 deaths.^2^ The Centers for Disease Control use multiple methods to estimate track flu activity in order "to provide a national picture of flu activity."^3^
-
-Having a forecast of the incidence of influenza, or the rate of positive results for influenza tests, can aid public health officials in having a better understanding of how the disease is affecting the nation. It can also help public health administrators prepare a response that can most effectively allocate the appropriate resources.
+As of June 25, 2020, preliminary estimates of the number of flu deaths for the 2019-2020 flu season range between 24,000 and 62,000 deaths.^2^ The Centers for Disease Control use multiple methods to estimate track flu activity in order "to provide a national picture of flu activity."^3^ Having a forecast of the incidence of influenza, or the rate of positive results for influenza tests, can aid public health officials in having a better understanding of how the disease is affecting the nation. It can also help public health administrators prepare a response that can most effectively allocate the appropriate resources.
 
 This case study attempts to model the national rate of infection using an autoregressive integrated moving average (ARIMA) model using publicly available flu data. Weekly flu data are taken from the World Health Organization's (WHO) FluNet database from October 04, 2010 through June 07, 2020. 
 
@@ -105,6 +103,7 @@ mtext(side=4, line=3, 'Percent Positive')
 # add legend
 legend("topleft", legend=c("Specimens Processed", "Percent Positive"), lty=c(1, 1), col=c("black", "orange"), cex=.6)
 ```
+##### Stationarity  
 
 Statistics that allow time series data to be accurately described at all time points require the time series to be stationary. A stationary time series is one whose statistical properties such as mean, variance, autocorrelation, etc. are all constant over time. For a time series to be considered stationary the following conditions must be met:
 
@@ -310,16 +309,15 @@ The average squared error (ASE) will be used to measure the goodness of fit of t
 
 $$ASE = \frac{\sum(\hat X_i - X_i)^2}{n}$$
 
-It should be noted that the ASE is a snapshot in time and can vary for the same data set depending on the size of the training data. A more stable approach it to use a rolling window ASE, where the training data is comprised of a "window" of observations (a window of time).
+It should be noted that the ASE is a snapshot in time and can vary for the same data set depending on the size of the training data. It uses $n-k$ values, where $n$ is the length of the time series, to train the model and then uses the last $k$ values to validate forecasted values. For the data in this case study, a single ASE for a 6-month (26-week) forecast would fit the model on 235 weeks of data and then test on the last 26 weeks, for example.
 
-Like cross-validation, we're taking that one model and sliding across the whole dataset and seeing how well it predicts the next $n$ observations. With the rolling window ASE method, we are not simply taking the last ASE observation from n prior periods. The rolling window characteristic loops through time horizons and averages the ASEs together, which can prove to be a more stable representation of the overall model ASE. For example, if there was some particularly odd behavior in the recent past of a time series, a single ASE could be misleading.
+A more useful approach is to shorten the training period and fit the model on a smaller training set (a shorter "window" of time) and then validate the data on the subsequent $k$ values. The training set, or window, then "rolls" or "slides" to the subsequent period (week) and evaluated again and again.
 
-The training dataset will be comprised of at least 130 weeks, or 2.5 years of data. The forecast horizon will be used as the validation set. 
+This is called a rolling window ASE. With the rolling window ASE method, we are not simply taking the last ASE observation from $n$ prior periods. The rolling window characteristic loops through time horizons and averages the ASEs together, which can prove to be a more stable representation of the overall model ASE. For example, if there was some particularly odd behavior in the recent past of a time series, a single ASE could be misleading.
 
-Ideally, for the rolling window ASE charts below, a low and steady ASE value (red line) as compared to the observed values (blue line) is preferred. This would indicate that the model did a good job of predicting most, if not all, the observed values. Spikes in the ASE value represent observed values that were not predicted well, areas of large error.
+Like cross-validation, we're taking the model and sliding across the whole dataset and seeing how well it predicts the next $n$ observations. The training dataset will be comprised of at least 130 weeks, or 2.5 years of data. The forecast horizon will be used as the validation set. 
 
-Ideally, for the rolling window ASE charts below, a low and steady ASE value (red line) as compared to the observed values (blue line) is preferred. This would indicate that the model did a good job of predicting most, if not all, the observed values. Spikes in the ASE value represent observed values that were not predicted well, areas of large error.
-
+Ideally, for the rolling window ASE charts below, a low and steady ASE value (dotted red line) as compared to the observed values (blue line) is preferred. This would indicate that the model did a good job of predicting most, if not all, the observed values. Spikes in the ASE value represent observed values that were not predicted well, areas of large error.
 
 ```{r}
 #Code from Prof. Sadler's Time Series Course Unit 7
@@ -462,18 +460,59 @@ legend("topleft", legend=c("Obs. Value", "ASE"), lty=c(1, 2), col=c("blue", "red
 
 ```
 
+```{r}
+horizon = 52 # we forecast out 1 year, or 52 weeks
+ASEHolder.1_year = numeric() # this is an empty varible that will hold all the ASE values
+
+for( i in 1:(260-(trainingSize + horizon) + 1))
+{
+  forecasts = fore.aruma.wge(ts.log_flu[i:(i+(trainingSize-1))], 
+                             phi = phis, theta = thetas, 
+                             s = s, d = d, n.ahead = horizon,plot=FALSE)
+  ASE = mean((ts.log_flu[(trainingSize+i):(trainingSize+ i + (horizon) - 1)] - forecasts$f)^2)
+  ASEHolder.1_year[i] = ASE
+}
+
+mean_windowedASE.1_year = mean(ASEHolder.1_year)
+median_windowedASE.1_year = median(ASEHolder.1_year)
+
+# visualization of windowed ASE over time
+par(mar = c(5,5,2,5))
+plot(ts.log_flu, type="l", ylab='Flu Positive Rate', xlab='Time', las = 1, col="blue", main = 'Figure 15 \nRolling Window ASE Over Time (1-year forecast)')
+par(new = T)
+# plot rolling window ASE 
+plot(ASEHolder.1_year, type="l", lty=2, axes=F, ylab=NA, xlab=NA, col="red")
+# create tick marks and label on right vertical axis
+axis(side=4, las=1)
+# add ASE line
+mtext(side=4, line=3, 'ASE')
+# add legend
+legend("topleft", legend=c("Obs. Value", "ASE"), lty=c(1, 2), col=c("blue", "red"), cex=.6)
+
+```
+
 From the rolling window ASE charts above and Table 2 below the performance of the model deteriorates as the horizon increases.
+
+In Table 2, the median and mean rolling window ASE values are displayed
 
 ##### Table 2: Rolling Window ASE
 
 ```{r}
-forecast_horizon <- c("2 weeks", "4 weeks", "3 months", "6 months")
-mean_rolling_window_ASE<- c(mean_windowed_ASE.2_weeks,mean_windowed_ASE.4_weeks, mean_windowed_ASE.3_months, mean_windowedASE.6_months)
-median_rolling_window_ASE <- c(median_windowed_ASE.2_weeks, median_windowed_ASE.4_weeks, median_windowed_ASE.3_months, median_windowedASE.6_months) 
+single_ASE.2_weeks = tail(ASEHolder.2_weeks, n=1)
+single_ASE.4_weeks = tail(ASEHolder.4_weeks, n=1)
+single_ASE.3_months = tail(ASEHolder.3_months, n=1)
+single_ASE.6_months = tail(ASEHolder.6_months, n=1)
+single_ASE.1_year = tail(ASEHolder.1_year, n=1)
 
-rolling.window.ASE <- data.frame(forecast_horizon, mean_rolling_window_ASE, median_rolling_window_ASE)
+forecast_horizon <- c("2 weeks", "4 weeks", "3 months", "6 months", "1 year")
+single_ASE <- c(single_ASE.2_weeks, single_ASE.4_weeks, single_ASE.3_months, single_ASE.6_months, single_ASE.1_year)
+mean_rolling_window_ASE<- c(mean_windowed_ASE.2_weeks,mean_windowed_ASE.4_weeks, mean_windowed_ASE.3_months, mean_windowedASE.6_months, mean_windowedASE.1_year)
+median_rolling_window_ASE <- c(median_windowed_ASE.2_weeks, median_windowed_ASE.4_weeks, median_windowed_ASE.3_months, median_windowedASE.6_months, median_windowedASE.1_year) 
+
+rolling.window.ASE <- data.frame(forecast_horizon, single_ASE, mean_rolling_window_ASE, median_rolling_window_ASE)
 
 names(rolling.window.ASE)[names(rolling.window.ASE) == "forecast_horizon"] <- "Forecast Horizon"
+names(rolling.window.ASE)[names(rolling.window.ASE) == "single_ASE"] <- "Single ASE"
 names(rolling.window.ASE)[names(rolling.window.ASE) == "mean_rolling_window_ASE"] <- "Rolling Window ASE (Mean)"
 names(rolling.window.ASE)[names(rolling.window.ASE) == "median_rolling_window_ASE"] <- "Rolling Window ASE (Median)"
 customGreen0 = "#DeF7E9"
@@ -481,6 +520,7 @@ customGreen = "#71CA97"
 
 formattable(rolling.window.ASE, align =c("l","c","c"), list(
   `Forecast Horizon` = formatter("span", style = ~ style(color = "grey",font.weight = "bold")), 
+  `Single ASE`= color_tile(customGreen, customGreen0),
   `Rolling Window ASE (Mean)`= color_tile(customGreen, customGreen0),
   `Rolling Window ASE (Median)`= color_tile(customGreen, customGreen0)
 ))
@@ -489,7 +529,7 @@ formattable(rolling.window.ASE, align =c("l","c","c"), list(
 
 ## Conclusion
 
-When fitting an ARMA model to a set of data, the goal is to explain as much of the variability in the data as is reasonably possible. The ARMA(3,1) model does a good job at forecasting the number of weekly positive flu cases for a 2-week horizon. The performance of the model deteriorates as the forecast horizon increases from two weeks (mean rolling window ASE = 0.104) to 6 months (mean rolling window ASE = 0.751) as shown in Table 2.
+When fitting an ARMA model to a set of data, the goal is to explain as much of the variability in the data as is reasonably possible. The ARMA(3,1) model does a good job at forecasting the number of weekly positive flu cases for a 2-week horizon. The performance of the model deteriorates as the forecast horizon increases from two weeks (mean rolling window ASE = 0.104) to 6 months (mean rolling window ASE = 0.751) as shown in Table 2. The results of this case study show that an ARMA(3,1) model is a simple and useful model to forecast flu cases for shorter, or more immediate, time horizons. 
 
 
 
