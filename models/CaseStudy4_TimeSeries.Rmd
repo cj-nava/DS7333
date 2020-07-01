@@ -132,7 +132,7 @@ plot(mean_weekly_cases$Week,mean_weekly_cases$mean_positive_cases, type = "o",
 
 ```
 
-The correlation between data points (covariance) only depends on how far apart they are in time and not where they are in time (i.e., contstant autocovariance). The ACF plots in Figure 4 and Figure 5 split the data in half to see if the autocorrelations (autocovariance) change over time. Autocorrelations that change over time would imply a non-stationary time series. Comparing the first half of the data to the second half of the data shows the ACFs are not identical. The difference is particularly evident at lag 10. This suggests the autocovariance of the data is not constant over time and a transformation of the data may be required.
+The correlation between data points (covariance) only depends on how far apart they are in time and not where they are in time (i.e., contstant autocovariance). The ACF plots in Figure 4 and Figure 5 split the data in half to see if the autocorrelations (autocovariance) change over time. Autocorrelations that change over time would imply a non-stationary time series. Comparing the first half of the data to the second half of the data shows the ACFs are not the same. The difference is particularly evident at lag 10. This suggests the autocovariance of the data is not constant over time and a transformation of the data may be required.
 
 ```{r fig.height=4,fig.width=11}
 # to compare the ACF structure of the first half of the data to the second half.
@@ -154,7 +154,7 @@ plot(ts.log_flu, main=c(paste("Figure 6"),
                paste("Log-transformed Weekly Flu Cases in the U.S. from June 15, 2015 through June 07, 2020")), cex.main = 0.9, xlab="Year", ylab="Positive Flu Cases")
 ```
 
-A comparison of the ACF plots for the log-transformed data shows the first half (Figure 7) is identical to the second half (Figure 8), which suggests constant autocovariance over time.
+A comparison of the ACF plots for the log-transformed data shows the first half (Figure 7) is nearly identical to the second half (Figure 8), which suggests constant autocovariance over time.
 ```{r fig.height=4,fig.width=11}
 # to compare the ACF structure of the first half of the data to the second half.
 par(mfrow = c(1,2))
@@ -162,18 +162,17 @@ acf(ts.log_flu[1:130], main="Figure 7 \nAutocorrelations for First Half of Log-t
 acf(ts.log_flu[131:260], main="Figure 8 \nAutocorrelations for Second Half of Log-transformed Data", cex.main=0.8)
 ```
 
-
 ##### ACF and Spectral Density
 
-The autocorrelations exhibit sinusoidal ACF behavior converging to zero, which is characteristic of complex conjugate roots and an AR(2) process.
+The ACF plot shown in Figure 9 exhibits converging, sinusoidal behavior, which is characteristic of complex conjugate roots and may suggest an AR(2) process.
 
 ```{r fig.height = 4, fig.width = 12, fig.align = "center"}
 # plot the ACF and spectral densities
 #invisible allows the plot to print, but supresses the output
-invisible(acf(ts.log_flu, lag.max = 200))
+acf(ts.log_flu, lag.max = 200, main = "Figure 9")
 ```
 
-Additionaly, when looking at the spectral density, which helps identify the frequency content of a time series, there is a significant peak near 0 suggesting complex roots and possible seasonality in the data. There appears to be cyclic behavior in the time series data, which could imply seasonality and a non-stationary process. In the first spectral density plot there is a large peak near zero. When the truncation point is changed to 20, this peak is at approimately 0.02, or 1/50, which indicates a period of approximately one year. 
+Additionaly, when looking at the spectral density, which helps identify the frequency content of a time series, there is a significant peak near 0 suggesting complex roots. There appears to be cyclic behavior in the time series data, which could imply seasonality and a non-stationary process. In the first spectral density plot there is a large peak near zero. When the truncation point is changed to 20, this peak is at approimately 0.02, or 1/50, which indicates a period of approximately one year. 
 
 ```{r fig.height = 4, fig.width = 12, fig.align = "center"}
 # plot the ACF and spectral densities
@@ -185,7 +184,7 @@ invisible(parzen.wge(ts.log_flu,trunc = 20))
 
 However, it is important to note that time series data with cyclic behavior and no trend or seasonality is considered stationary if the cycles are not of a fixed length.^4^ Cyclic behavior should not be confused with seasonal behavior. If the fluctuations in the data are not of a fixed period, then they are considered cyclic. If the period of the cycle is fixed, then the pattern is seasonal.
 
-From Table 1 below, it is evident that the cycles (measuring from peak to peak) are not of a fixed length and display aperiodic cyclic behavior.  The number of weeks that elapse between peaks for the time series varies between 49 and 55 weeks. Intuitively, this makes sense as the peak of the flu "season" doesn't necessarily fall on the same week or month every year. Therefore, it can be argued that the pattern is not seasonal but cyclic. 
+From Table 1 below, it is evident that the cycles (measuring from peak to peak) are not of a fixed length and display aperiodic cyclic behavior.  The number of weeks that elapse between peaks for the time series varies between 49 and 55 weeks. Intuitively, this makes sense as the peak of the flu "season" doesn't necessarily fall on the same week or month every year. Therefore, it can be argued that the pattern in the weekly data is not seasonal but cyclic. 
 
 ##### Table 1: Flu Season Peak Week
 
@@ -202,9 +201,9 @@ To give some validation to the initial assesments of the data lacking seasonalit
 
 ##### Dickey-Fuller Test for Stationarity
 
-Employing an augmented Dickey-Fuller test helps determine if one or more seasonal factors should be included in the model and tests the null hypothesis that the autoregressive model has a root outside of the unit circle. The test depends on failing to reject the null hypothesis to decide whether there is a unit root present. However, failing to reject the null hypothesis is not evidence that a unit root (i.e., seasonal factor) exists. 
+Employing an augmented Dickey-Fuller test helps determine if one or more seasonal factors should be included in the model and tests the null hypothesis that the autoregressive model has a root outside of the unit circle. The test depends on failing to reject the null hypothesis to decide whether there is a unit root present. However, it shoul be noted that failing to reject the null hypothesis is not evidence that a unit root (i.e., seasonal factor) exists. 
 
-A *p*-value > 0.5 for the augmented Dickey-Fuller test would fail to reject the null hypothesis, which means that a unit root, or one or more seasonal factors, may be present. In the case of this data, the augmented Dickey-Fuller test rejects the null hypothesis with a *p*-value of 0.01, suggesting there are no seasonal factors present and validating the initial visual inspection of the data.
+In the case of this data, the augmented Dickey-Fuller test rejects the null hypothesis with a *p*-value of 0.01, suggesting there are no seasonal factors present and validating the initial inspection of the data.
 
 ```{r}
 # Check for stationarity using the Dickey-Fuller test
@@ -224,8 +223,6 @@ fit = lm(x~t, data = df)
 # Cochrane-Orcutt test
 #cfit = cochrane.orcutt(fit)
 #summary(cfit)
-
-
 
 ```
 
@@ -254,7 +251,6 @@ The parameters for an ARMA(3,1) model are estimated using `est.arma.wge` functio
 params <- est.arma.wge(ts.log_flu, p=3, q=1)
 ```
 
-
 ARMA($p,q$) models assume that the noise component, $a_t$, of the model is white noise. If the residuals are not white noise, this suggests that further modeling may be necessary to better explain the behavior in the data. A visual inspection and a more formal test are employed to determine if the residuals are white noise and if additional modeling is necessary.
 
 ##### Visual Inspection of Residuals
@@ -267,7 +263,7 @@ invisible(plotts.sample.wge(params$res))
 
 The plot of the sample autocorrelations shows lag 25 outside the confidence bands. However, at a 95% confidence level, 1 out of every 20 lags is expected to be outside the bands. Therefore, per a visual inspection, the residuals appear to be white noise. 
 ```{r}
-acf(params$res, lag.max = 60, main="ACF of Residuals")
+acf(params$res, lag.max = 60, main="Figure 10")
 ```
 
 #####  Ljung-Box Test for residuals  
@@ -355,7 +351,7 @@ median_windowed_ASE.2_weeks = median(ASEHolder.2_weeks)
 
 # visualization of windowed ASE over time
 par(mar = c(5,5,2,5))
-plot(ts.log_flu, type="l", ylab='Flu Positive Rate', xlab='Time', las = 1, col="blue", main = 'Rolling Window ASE Over Time \n(2-week forecast)')
+plot(ts.log_flu, type="l", ylab='Flu Positive Rate', xlab='Time', las = 1, col="blue", main = 'Figure 11 \nRolling Window ASE Over Time  (2-week forecast)')
 par(new = T)
 # plot rolling window ASE 
 plot(ASEHolder.2_weeks, type="l", lty=2, axes=F, ylab=NA, xlab=NA, col="red")
@@ -387,7 +383,7 @@ median_windowed_ASE.4_weeks = median(ASEHolder.4_weeks)
 
 # visualization of windowed ASE over time
 par(mar = c(5,5,2,5))
-plot(ts.log_flu, type="l", ylab='Flu Positive Rate', xlab='Time', las = 1, col="blue", main = 'Rolling Window ASE Over Time \n(4-week forecast)')
+plot(ts.log_flu, type="l", ylab='Flu Positive Rate', xlab='Time', las = 1, col="blue", main = 'Figure 12 \nRolling Window ASE Over Time (4-week forecast)')
 par(new = T)
 # plot rolling window ASE 
 plot(ASEHolder.4_weeks, type="l", lty=2, axes=F, ylab=NA, xlab=NA, col="red")
@@ -420,7 +416,7 @@ median_windowed_ASE.3_months = median(ASEHolder.3_months)
 
 # visualization of windowed ASE over time
 par(mar = c(5,5,2,5))
-plot(ts.log_flu, type="l", ylab='Flu Positive Rate', xlab='Time', las = 1, col="blue", main = 'Rolling Window ASE Over Time \n(3-month forecast)')
+plot(ts.log_flu, type="l", ylab='Flu Positive Rate', xlab='Time', las = 1, col="blue", main = 'Figure 13 \nRolling Window ASE Over Time (3-month forecast)')
 par(new = T)
 # plot rolling window ASE 
 plot(ASEHolder.3_months, type="l", lty=2, axes=F, ylab=NA, xlab=NA, col="red")
@@ -453,7 +449,7 @@ median_windowedASE.6_months = median(ASEHolder.6_months)
 newASE = c(rep(NA, 131), ASEHolder.6_months) # this plots ASE from week 131 onward
 
 par(mar = c(5,5,2,5))
-plot(ts.log_flu, type="l", ylab='Flu Positive Rate', xlab='Time', las = 1, col="blue", main = 'Rolling Window ASE Over Time \n(6-month forecast)')
+plot(ts.log_flu, type="l", ylab='Flu Positive Rate', xlab='Time', las = 1, col="blue", main = 'Figure 14 \nRolling Window ASE Over Time (6-month forecast)')
 par(new = T)
 # plot rolling window ASE 
 plot(ASEHolder.6_months, type="l", lty=2, axes=F, ylab=NA, xlab=NA, col="red")
