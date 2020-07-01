@@ -74,14 +74,12 @@ most_recent_5_years.flu_positive_cases <- FluNetReport %>%
 # convert to time series object
 ts.flu <- ts(most_recent_5_years.flu_positive_cases[ ,4], start=2010, frequency = 52)
 
-# plot the data
-invisible(plotts.sample.wge(ts.flu))
 ```
 
 
 ```{r fig.height=4, fig.width=11}
-plot(ts.flu, main=c(paste("Weekly Flu Cases in the U.S."), 
-               paste("from June 15, 2015 through June 07, 2020")), xlab="Weeks", ylab="Rate of Positive Flu Cases")
+plot(ts.flu, main=c(paste("Figure 1"), 
+               paste("Weekly Flu Cases in the U.S. from June 15, 2015 through June 07, 2020")), cex.main = 1, xlab="Year", ylab="Number of Positive Flu Cases")
 ```
 
 In the plot below, the weekly positive rate, a percentage of the total specimens processed that tested positive for any strain of influenza, are plotted against the weekly number of tests processed. The positive rate appears not to vary too much from year to year even when the number of tests processed increases. 
@@ -91,9 +89,10 @@ par(mar = c(5,5,2,5))
 plot(most_recent_5_years.flu_positive_cases$wk_date.start, 
      most_recent_5_years.flu_positive_cases$total_flu_cases.positive,
      las = 1,type = "l",
-     main=c(paste("Number Specimens Processed Each Week vs Weekly Rate of Positve Flu Cases in the U.S."), 
-               paste("from June 15, 2015 through June 07, 2020")), 
-     xlab="Weeks", 
+     main=c(paste("Figure 2"), 
+               paste("Weekly Specimens Processed vs Weekly Rate of Positve Flu Cases in the U.S. from June 15, 2015 through June 07, 2020")),
+     cex.main=0.9,
+     xlab="Year", 
      ylab="Specimens Processed")
 
 par(new = T)
@@ -102,7 +101,7 @@ plot(most_recent_5_years.flu_positive_cases$total_flu_cases.percent_positive, ty
 # create tick marks and label on right vertical axis
 axis(side=4, las=1)
 # add ASE line
-mtext(side=4, line=3, 'ASE')
+mtext(side=4, line=3, 'Percent Positive')
 # add legend
 legend("topleft", legend=c("Specimens Processed", "Percent Positive"), lty=c(1, 1), col=c("black", "orange"), cex=.6)
 ```
@@ -115,7 +114,7 @@ Statistics that allow time series data to be accurately described at all time po
 
 To estimate means, variance and autocorrelations from a single realization requires us to meet three stationarity conditions. This means the average number of positive flu cases across our realization does not depend on time, or change over time. This would mean that if we repeated the same year with different realizations, those realizations would have the same mean.  If we can safely assume a constant mean across all years we can use all the observations to estimate our mean. Similarly if all years have a finite and constant variance across our years we can use all the data to estimate the common variance. The last requirement requires the correlation between data points to be dependent on how far apart they are in time and not where they are in our five year timespan. 
 
-From a visual inspection it is difficult to determine if the mean is constant over time. If the mean were constant over time then every time period would have the same mean, i.e., the mean for December is the same for every realization. Below is a plot of mean positive rates for every week of the year. The plot shows there are weekly differences in the mean, suggesting that the expected value of the time series depends on time. This raises an intial concern regarding stationarity, which will be addressed later.
+From a visual inspection of the realization it is difficult to determine if the mean is constant over time. If the mean were constant over time then every time period would have the same mean, i.e., the mean for December is the same for every realization. Figure 3 plots the mean positive cases by week of the year from 2015 through 2020. The plot shows there are weekly differences in the mean and that the peak for most years from 2015 thorugh 2020 was probably sometime in February. This implies that the expected value of the time series may depend on time and raises an intial concern regarding stationarity, which will be addressed later.
 
 ```{r mean_weekly_rate}
 by_week <- most_recent_5_years.flu_positive_cases %>% 
@@ -125,46 +124,42 @@ by_week <- most_recent_5_years.flu_positive_cases %>%
 # get avearge number of cases for the week of each flu season
 mean_weekly_cases <- by_week %>% summarise(mean_positive_cases = mean(total_flu_cases.positive))
 # plot the mean cases by week for all flu seasons from 2015 through 2020
-plot(mean_weekly_cases$Week,mean_weekly_cases$mean_positive_cases, type = "o", main = "Mean Number of Positive Flu Cases \n  15 June 2015 through 01 June 2020", xlab = "Flu Season Week Number", ylab = "Mean Rate")
+plot(mean_weekly_cases$Week,mean_weekly_cases$mean_positive_cases, type = "o", 
+     main=c(paste("Figure 3"), 
+               paste("Mean Flu Cases by Week of the Year from 15 June 2015 through 07 June 2020")),
+     cex.main=0.8,
+     xlab = "Flu Season Week Number", ylab = "Mean number of Positive Cases")
 
 ```
 
-
-```{r}
-# plot the data
-invisible(plotts.sample.wge(ts_flu.percent_positive_cases))
-```
-
-The correlation between data points (covariance) only depends on how far apart they are in time and not where they are in time (i.e., contstant autocovariance). The ACF plots below split the data in half to see if the autocorrelations (autocovariance) change over time. Autocorrelations that change over time would imply a non-stationary time series. Comparing the first half of the data to the second half of the data shows the ACFs are not identical. This suggests the autocovariance of the data is not constant over time.
+The correlation between data points (covariance) only depends on how far apart they are in time and not where they are in time (i.e., contstant autocovariance). The ACF plots in Figure 4 and Figure 5 split the data in half to see if the autocorrelations (autocovariance) change over time. Autocorrelations that change over time would imply a non-stationary time series. Comparing the first half of the data to the second half of the data shows the ACFs are not identical. The difference is particularly evident at lag 10. This suggests the autocovariance of the data is not constant over time and a transformation of the data may be required.
 
 ```{r fig.height=4,fig.width=11}
 # to compare the ACF structure of the first half of the data to the second half.
 par(mfrow = c(1,2))
-acf(ts.flu[1:130], main="First Half")
-acf(ts.flu[131:260], main="Second Half")
+acf(ts.flu[1:130], main="Figure 4 \nAutocorrelations for First Half of Data")
+acf(ts.flu[131:260], main="Figure 5 \nAutocorrelations for Second Half of Data")
 ```
 
-The data is log-transformed to normalize values and eliminate the non-constant variance.
-```{r}
+To deal with the non-constant variance, the data is log-transformed as shown in Fiure 6, which serves to normalize the values.
+```{r fig.height=4, fig.width=11}
 # add column of log transformed data to datframe
 log_data <- most_recent_5_years.flu_positive_cases %>% 
   mutate(log_flu=log(total_flu_cases.positive))
 # convert to time series object
-ts.log_flu <- ts(log_data[ ,6], start=2010, frequency = 52)
-```
+ts.log_flu <- ts(log_data[ ,6], start=2015, frequency = 52)
 
-```{r fig.height=4, fig.width=11}
 # plot the data
-plot(ts.log_flu, main=c(paste("Log-transformed Weekly Flu Cases in the U.S."), 
-               paste("from June 15, 2015 through June 07, 2020")), xlab="Weeks", ylab="log of Positive Flu Cases")
+plot(ts.log_flu, main=c(paste("Figure 6"), 
+               paste("Log-transformed Weekly Flu Cases in the U.S. from June 15, 2015 through June 07, 2020")), cex.main = 0.9, xlab="Year", ylab="Positive Flu Cases")
 ```
 
-A comparison of the ACF plots for the log-transformed data shows the first half is identical to the second half, which suggests constant autocovariance over time.
-```{r}
+A comparison of the ACF plots for the log-transformed data shows the first half (Figure 7) is identical to the second half (Figure 8), which suggests constant autocovariance over time.
+```{r fig.height=4,fig.width=11}
 # to compare the ACF structure of the first half of the data to the second half.
 par(mfrow = c(1,2))
-acf(ts.log_flu[1:130], main="log_flu First Half")
-acf(ts.log_flu[131:260], main="log_flu Second Half")
+acf(ts.log_flu[1:130], main="Figure 7 \nAutocorrelations for First Half of Log-transformed Data", cex.main=0.8)
+acf(ts.log_flu[131:260], main="Figure 8 \nAutocorrelations for Second Half of Log-transformed Data", cex.main=0.8)
 ```
 
 
@@ -190,22 +185,17 @@ invisible(parzen.wge(ts.log_flu,trunc = 20))
 
 However, it is important to note that time series data with cyclic behavior and no trend or seasonality is considered stationary if the cycles are not of a fixed length.^4^ Cyclic behavior should not be confused with seasonal behavior. If the fluctuations in the data are not of a fixed period, then they are considered cyclic. If the period of the cycle is fixed, then the pattern is seasonal.
 
-From Table 1 below, it is evident that the cycles (measuring from peak to peak) are not of a fixed length and display aperiodic cyclic behavior.  The number of weeks that elapse between peaks for the time series varies between 41 and 63 weeks. Intuitively, this makes sense as the peak of the flu "season" doesn't necessarily fall on the same week or month every year. Therefore, it can be argued that the pattern is not seasonal but cyclic. 
+From Table 1 below, it is evident that the cycles (measuring from peak to peak) are not of a fixed length and display aperiodic cyclic behavior.  The number of weeks that elapse between peaks for the time series varies between 49 and 55 weeks. Intuitively, this makes sense as the peak of the flu "season" doesn't necessarily fall on the same week or month every year. Therefore, it can be argued that the pattern is not seasonal but cyclic. 
 
 ##### Table 1: Flu Season Peak Week
 
-| Flu Season    | Peak Week Start Date  | Peak Week Number  | # of Weeks Between Peaks  | Positive Rate   |
-|:------------- |:--------------------- | :----------------:| :------------------------:| :--------------:|
-| 2010-2011     | January 31, 2011      |                 5 |                       N/A |          35.49% |
-| 2011-2012     | March 12, 2012        |                11 |                        58 |          31.90% |
-| 2012-2013     | December 24, 2012     |                52 |                        41 |          38.18% |
-| 2013-2014     | December 23, 2013     |                52 |                        52 |          30.61% |
-| 2014-2015     | December 22, 2014     |                52 |                        52 |          32.37% |
-| 2015-2016     | March 07, 2016        |                10 |                        63 |          28.59% |
-| 2016-2017     | February 20, 2017     |                 8 |                        50 |          28.17% |
-| 2017-2018     | January 08, 2018      |                 2 |                        46 |          30.50% |
-| 2018-2019     | February 25, 2019     |                 9 |                        59 |          29.58% |
-| 2019-2020     | February 03, 2020     |                 6 |                        49 |          32.74% |
+| Peak Week Start Date  | Peak Week Number  | # of Weeks Between Peaks  | Log Value   | 
+|:--------------------: | :----------------:| :------------------------:| :----------:|
+| 2016-03-07	          |         10        |             N/A           |     9.39    |
+| 2017-02-13	          |          7        |             49            |     9.64    |
+| 2018-01-29            |          5        |             50            |    10.18    |
+| 2019-02-18	          |          8        |             55            |     9.76    |
+| 2020-01-27	          |          5        |             49            |    10.15    |
 
 
 To give some validation to the initial assesments of the data lacking seasonality and trend, a more formal approach to test for stationarity and trend is explored.
@@ -259,20 +249,22 @@ formattable(invisible(aic5.wge(ts.log_flu, type = 'bic')))
 ## Candidate Model - ARMA(3,1)
 ***
 
+The parameters for an ARMA(3,1) model are estimated using `est.arma.wge` function in the `tswge` package. Doing this will allow for inspection of the residuals and accessing the $\varphi$ and $\theta$ parameters to use in the forecast function.
 ```{r}
 params <- est.arma.wge(ts.log_flu, p=3, q=1)
 ```
 
 
-ARMA($p,\,q$) models assume that the noise component, $a_t$, of the model is white noise. If the residuals are not white noise, this suggests that further modeling may be necessary to better explain the behavior in the data. A visual inspection and a more formal test are employed to determine if the residuals are white noise.
+ARMA($p,q$) models assume that the noise component, $a_t$, of the model is white noise. If the residuals are not white noise, this suggests that further modeling may be necessary to better explain the behavior in the data. A visual inspection and a more formal test are employed to determine if the residuals are white noise and if additional modeling is necessary.
 
 ##### Visual Inspection of Residuals
 
-The residuals look random per the realization plot, suggesting white noise. 
+Per the realization plot, the residuals look random, which is characteristic of white noise. 
 ```{r}
 # check residuals for white noise
 invisible(plotts.sample.wge(params$res))
 ```
+
 The plot of the sample autocorrelations shows lag 25 outside the confidence bands. However, at a 95% confidence level, 1 out of every 20 lags is expected to be outside the bands. Therefore, per a visual inspection, the residuals appear to be white noise. 
 ```{r}
 acf(params$res, lag.max = 60, main="ACF of Residuals")
