@@ -33,13 +33,13 @@ July 1, 2020
 ## Introduction
 ***
 
-The seasonal flu is a public health concern that takes a large effort to mitigate. Icreased costs of medical care, loss of productivity, and death are all attributed to the disease each year. The average annual economic impact in the U.S. is estimated at approximately $11.2 billion.^1^
+The seasonal flu is a public health concern that takes a large effort to mitigate. Increased costs of medical care, loss of productivity, and death are all attributed to the disease each year. The average annual economic impact in the U.S. is estimated at approximately $11.2 billion.^1^
 
 As of June 25, 2020, preliminary estimates of the number of flu deaths for the 2019-2020 flu season range between 24,000 and 62,000 deaths.^2^ The Centers for Disease Control use multiple methods to estimate track flu activity in order "to provide a national picture of flu activity."^3^
 
 Having a forecast of the incidence of influenza, or the rate of positive results for influenza tests, can aid public health officials in having a better understanding of how the disease is affecting the nation. It can also help public health administrators prepare a response that can most effectively allocate the appropriate resources.
 
-This case study attempts model the national rate of infection using an autoregressive integrated moving average (ARIMA) model using publicly available flu data. Weekly flu data are taken from the World Health Organization's (WHO) FluNet database from October 04, 2010 through June 07, 2020. 
+This case study attempts to model the national rate of infection using an autoregressive integrated moving average (ARIMA) model using publicly available flu data. Weekly flu data are taken from the World Health Organization's (WHO) FluNet database from October 04, 2010 through June 07, 2020. 
 
 The data was cleaned and only 4 of the 22 variables were kept: Week, SDATE, SPEC_PROCESSED_NB, and ALL_INF. The latter three were renamed to wk_date.start, total_specimens.tested, and total_flu_cases.positive, respectively. An additional variable, `total_flu_cases.percent_positive`, was created, which is a percentage of the total specimens processed that tested positive for any strain of influenza.
 
@@ -113,9 +113,9 @@ Statistics that allow time series data to be accurately described at all time po
 2. The variance is finite and does not depend on time.
 3. The correlation between data points only depends on how far apart they are in time and not where they are in time.
 
-To estimate means, variance and autocorrelations from a single realization requires us to meet three stationarity conditions. This means the average number of positive flu cases across our times does not depend on time, or change over time. This would mean that if we repeated the same year with different realizations, those realizations would have the same mean.  If we can safely assume a constant mean across all years we can use all the observations to estimate our mean. Similarly if all years have a finite and constant variance across our years we can use all the data to estimate the common variance. The last requirement requires the correlation between data points to be dependent on how far apart they are in time and not where they are in our five year timespan. 
+To estimate means, variance and autocorrelations from a single realization requires us to meet three stationarity conditions. This means the average number of positive flu cases across our realization does not depend on time, or change over time. This would mean that if we repeated the same year with different realizations, those realizations would have the same mean.  If we can safely assume a constant mean across all years we can use all the observations to estimate our mean. Similarly if all years have a finite and constant variance across our years we can use all the data to estimate the common variance. The last requirement requires the correlation between data points to be dependent on how far apart they are in time and not where they are in our five year timespan. 
 
-From a visual inspection it is difficult to determine if the mean is constant over time. If the mean were constant over time then every time period would have the same mean, i.e., the mean for December is the same for every. Below is a plot of mean positive rates for every week of the year. The plot shows there are weekly differences in the mean, suggesting that the expected value of the time series depends on time. This raises an intial concern regarding stationarity, which will be addressed later.
+From a visual inspection it is difficult to determine if the mean is constant over time. If the mean were constant over time then every time period would have the same mean, i.e., the mean for December is the same for every realization. Below is a plot of mean positive rates for every week of the year. The plot shows there are weekly differences in the mean, suggesting that the expected value of the time series depends on time. This raises an intial concern regarding stationarity, which will be addressed later.
 
 ```{r mean_weekly_rate}
 by_week <- most_recent_5_years.flu_positive_cases %>% 
@@ -234,6 +234,9 @@ fit = lm(x~t, data = df)
 # Cochrane-Orcutt test
 #cfit = cochrane.orcutt(fit)
 #summary(cfit)
+
+
+
 ```
 
 
