@@ -74,13 +74,12 @@ ts.flu <- ts(most_recent_5_years.flu_positive_cases[ ,4], start=2010, frequency 
 
 ```
 
-
 ```{r fig.height=4, fig.width=11}
 plot(ts.flu, main=c(paste("Figure 1"), 
                paste("Weekly Flu Cases in the U.S. from June 15, 2015 through June 07, 2020")), cex.main = 1, xlab="Year", ylab="Number of Positive Flu Cases")
 ```
 
-In the plot below, the weekly positive rate, a percentage of the total specimens processed that tested positive for any strain of influenza, are plotted against the weekly number of tests processed. The positive rate appears not to vary too much from year to year even when the number of tests processed increases. 
+In the plot below, the weekly positive rate, a percentage of the total specimens processed that tested positive for any strain of influenza, are plotted against the weekly number of tests processed. The positive rate appears not to vary too much from year to year even when the number of tests processed increases. This implies that more testing does not necessarily mean an increase in the rate of positive cases and that perhaps there exists a minimum number of specimens tested that can lead to safe estimates of the prevalence of flu for that year/season, which will not be explored in this case study.
 ```{r fig.height=4, fig.width=11}
 par(mar = c(5,5,2,5))
 # plot weekly specimens
@@ -130,6 +129,21 @@ plot(mean_weekly_cases$Week,mean_weekly_cases$mean_positive_cases, type = "o",
      cex.main=0.8,
      xlab = "Flu Season Week Number", ylab = "Mean number of Positive Cases")
 
+```
+
+##### Cochrane-Orcutt Test to Check for Trend
+
+A trend would indicate the data is not stationary. To check if there is a trend, the Cochrane-Orcutt test is employed, which tests the hypothesis that there is no serial correlation in the residuals (i.e., no trend). The Cochrane-Orcutt test yields a *p*-value of 0.9133 and fails to reject the null hypothesis, which suggests there is no trend.
+```{r}
+# Check for trend using Cochrane-Orcutt
+df <- most_recent_5_years.flu_positive_cases[,c(2,4)]
+x <- ts.flu
+t = most_recent_5_years.flu_positive_cases$wk_date.start 
+fit = lm(x~t, data = df)
+
+# Cochrane-Orcutt test
+cfit = cochrane.orcutt(fit)
+summary(cfit)
 ```
 
 The correlation between data points (covariance) only depends on how far apart they are in time and not where they are in time (i.e., contstant autocovariance). The ACF plots in Figure 4 and Figure 5 split the data in half to see if the autocorrelations (autocovariance) change over time. Autocorrelations that change over time would imply a non-stationary time series. Comparing the first half of the data to the second half of the data shows the ACFs are not the same. The difference is particularly evident at lag 10. This suggests the autocovariance of the data is not constant over time and a transformation of the data may be required.
@@ -184,20 +198,20 @@ invisible(parzen.wge(ts.log_flu,trunc = 20))
 
 However, it is important to note that time series data with cyclic behavior and no trend or seasonality is considered stationary if the cycles are not of a fixed length.^4^ Cyclic behavior should not be confused with seasonal behavior. If the fluctuations in the data are not of a fixed period, then they are considered cyclic. If the period of the cycle is fixed, then the pattern is seasonal.
 
-From Table 1 below, it is evident that the cycles (measuring from peak to peak) are not of a fixed length and display aperiodic cyclic behavior.  The number of weeks that elapse between peaks for the time series varies between 49 and 55 weeks. Intuitively, this makes sense as the peak of the flu "season" doesn't necessarily fall on the same week or month every year. Therefore, it can be argued that the pattern in the weekly data is not seasonal but cyclic. 
+From Table 1 below, it is evident that the cycles (measuring from peak to peak) are not of a fixed length and display aperiodic, cyclic behavior.  The number of weeks that elapse between peaks for the time series varies between 55 and 60 weeks. Intuitively, this makes sense as the peak of the flu "season" doesn't necessarily fall on the same week or month every year. Therefore, it can be argued that the pattern in the weekly data is not seasonal but cyclic. 
 
 ##### Table 1: Flu Season Peak Week
 
 | Peak Week Start Date  | Peak Week Number  | # of Weeks Between Peaks  | Log Value   | 
 |:--------------------: | :----------------:| :------------------------:| :----------:|
-| 2016-03-07	          |         10        |             N/A           |     9.39    |
+| 2016-03-07	          |         10        |             60            |     9.39    |
 | 2017-02-13	          |          7        |             49            |     9.64    |
 | 2018-01-29            |          5        |             50            |    10.18    |
 | 2019-02-18	          |          8        |             55            |     9.76    |
 | 2020-01-27	          |          5        |             49            |    10.15    |
 
 
-To give some validation to the initial assesments of the data lacking seasonality and trend, a more formal approach to test for stationarity and trend is explored.
+To give some validation to the initial assesments of the data lacking seasonality and trend, a more formal approach to test for stationarity is explored.
 
 ##### Dickey-Fuller Test for Stationarity
 
@@ -209,23 +223,6 @@ In the case of this data, the augmented Dickey-Fuller test rejects the null hypo
 # Check for stationarity using the Dickey-Fuller test
 adf.test(ts.log_flu)  
 ```
-
-##### Cochrane-Orcutt Test to Check for Trend
-
-To check if there is a trend, the Cochrane-Orcutt test is employed, which tests the hypothesis that there is no serial correlation in the residuals (i.e., no trend). The Cochrane-Orcutt test yields a *p*-value of 0.9133 and fails to reject the null hypothesis, which suggests there is no trend.
-```{r}
-# Check for trend using Cochrane-Orcutt
-df <- log_data[,c(2,6)]
-x <- ts.log_flu
-t = seq(1,260,1) 
-fit = lm(x~t, data = df)
-
-# Cochrane-Orcutt test
-#cfit = cochrane.orcutt(fit)
-#summary(cfit)
-
-```
-
 
 Per the initial visual inspection, the Cochrane-Orcutt test, and the Dickey-Fuller test, the data for the model will be assumed to be stationary with no trend and no seasonal factors.
 
@@ -494,7 +491,7 @@ legend("topleft", legend=c("Obs. Value", "ASE"), lty=c(1, 2), col=c("blue", "red
 
 From the rolling window ASE charts above and Table 2 below the performance of the model deteriorates as the horizon increases.
 
-In Table 2, the median and mean rolling window ASE values are displayed
+In Table 2, the median and mean rolling window ASE values are displayed. 
 
 ##### Table 2: Rolling Window ASE
 
@@ -530,7 +527,7 @@ formattable(rolling.window.ASE, align =c("l","c","c"), list(
 
 ## Conclusion
 
-When fitting an ARMA model to a set of data, the goal is to explain as much of the variability in the data as is reasonably possible. The ARMA(3,1) model does a good job at forecasting the number of weekly positive flu cases for a 2-week horizon. The performance of the model deteriorates as the forecast horizon increases from two weeks (mean rolling window ASE = 0.104) to 6 months (mean rolling window ASE = 0.751) as shown in Table 2. The results of this case study show that an ARMA(3,1) model is a simple and useful model to forecast flu cases for shorter, or more immediate, time horizons. 
+When fitting an ARMA model to a set of data, the goal is to explain as much of the variability in the data as is reasonably possible. The ARMA(3,1) model does a good job at forecasting the number of weekly positive flu cases for a 2-week horizon. The performance of the model deteriorates as the forecast horizon increases from two weeks (mean rolling window ASE = 0.104) to one year (mean rolling window ASE = 0.566) as shown in Table 2. The results of this case study show that an ARMA(3,1) model is a simple and useful model to forecast flu cases for shorter, or more immediate, time horizons. 
 
 
 
