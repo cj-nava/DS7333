@@ -103,7 +103,8 @@ mtext(side=4, line=3, 'Percent Positive')
 # add legend
 legend("topleft", legend=c("Specimens Processed", "Percent Positive"), lty=c(1, 1), col=c("black", "orange"), cex=.6)
 ```
-##### Stationarity  
+
+##### Stationarity
 
 Statistics that allow time series data to be accurately described at all time points require the time series to be stationary. A stationary time series is one whose statistical properties such as mean, variance, autocorrelation, etc. are all constant over time. For a time series to be considered stationary the following conditions must be met:
 
