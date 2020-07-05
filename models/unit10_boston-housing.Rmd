@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
 library(VIM)
+library(skimr)
 
 ```
 
@@ -77,6 +78,13 @@ summary(boston.df)
 ```
 
 
+```{r, echo=FALSE}
+
+#skim dataframe
+skim(boston.df)
+
+
+```
 
 ## Finding Missing Data
 
@@ -95,6 +103,179 @@ aggr(boston.df,
 
 
 ```
+
+
+
+
+##MAR
+
+
+**Determining Parameter for Deletion**
+* 10%: TAX <= 233 – [54 values 10.67%]
+* 20%: TAX <= 270 – [99 values 19.565%]
+* 30%: TAX <= 287 – [149 values 29.447%]
+
+**Values to be Deleted**
+* CRIM - per capita crime rate by town
+* RAD - index of accessibility to radial highways
+
+
+###MAR 10%
+
+```{r, echo=FALSE}
+
+# create 10% MAR dataframe
+boston.df -> boston_mar_10.df
+
+# list rows with TAX <= 233 
+boston_mar_10.df[boston_mar_10.df$TAX <= 233,c("CRIM","RAD")]
+
+
+
+```
+
+
+
+```{r, echo=FALSE}
+
+
+#assign NA to CRIM for 10% MAR
+boston_mar_10.df$CRIM[boston_mar_10.df$TAX <= 233] <- NA
+
+#assign NA to RAD for 10% MAR
+boston_mar_10.df$RAD[boston_mar_10.df$TAX <= 233] <- NA
+
+
+
+```
+
+
+
+```{r, echo=FALSE}
+
+# list rows with missing values
+boston_mar_10.df[is.na(boston_mar_10.df$CRIM),c("CRIM","RAD","TAX")]
+
+# list rows with TAX <= 233 
+boston_mar_10.df[boston_mar_10.df$TAX <= 233, c("CRIM","RAD")]
+
+```
+
+
+
+
+
+
+
+
+
+
+###MAR 20%
+
+
+
+```{r, echo=FALSE}
+
+# create 10% MAR dataframe
+boston.df -> boston_mar_20.df
+
+# list rows with TAX <= 233 
+boston_mar_20.df[boston_mar_20.df$TAX <= 270,c("CRIM","RAD")]
+
+
+
+```
+
+
+
+```{r, echo=FALSE}
+
+
+#assign NA to CRIM for 10% MAR
+boston_mar_20.df$CRIM[boston_mar_20.df$TAX <= 270] <- NA
+
+#assign NA to RAD for 10% MAR
+boston_mar_20.df$RAD[boston_mar_20.df$TAX <= 270] <- NA
+
+
+
+```
+
+
+
+```{r, echo=FALSE}
+
+# list rows with missing values
+boston_mar_20.df[is.na(boston_mar_20.df$CRIM),c("CRIM","RAD","TAX")]
+
+# list rows with TAX <= 233 
+boston_mar_20.df[boston_mar_20.df$TAX <= 270, c("CRIM","RAD")]
+
+```
+
+
+
+
+
+
+
+
+
+###MAR 30%
+
+
+
+```{r, echo=FALSE}
+
+# create 10% MAR dataframe
+boston.df -> boston_mar_30.df
+
+# list rows with TAX <= 233 
+boston_mar_30.df[boston_mar_30.df$TAX <= 287,c("CRIM","RAD")]
+
+
+
+```
+
+
+
+```{r, echo=FALSE}
+
+
+#assign NA to CRIM for 10% MAR
+boston_mar_30.df$CRIM[boston_mar_30.df$TAX <= 287] <- NA
+
+#assign NA to RAD for 10% MAR
+boston_mar_30.df$RAD[boston_mar_30.df$TAX <= 287] <- NA
+
+
+
+```
+
+
+
+```{r, echo=FALSE}
+
+# list rows with missing values
+boston_mar_30.df[is.na(boston_mar_30.df$CRIM),c("CRIM","RAD","TAX")]
+
+# list rows with TAX <= 233 
+boston_mar_30.df[boston_mar_30.df$TAX <= 287, c("CRIM","RAD")]
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
