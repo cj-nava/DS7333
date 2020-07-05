@@ -32,7 +32,9 @@ https://www.kaggle.com/c/boston-housing
 https://www.cs.toronto.edu/~delve/data/boston/bostonDetail.html
 
 
-## Data description
+##Initial Data Exploration
+
+**Data Description**
 
 The Boston data frame has 506 rows and 14 columns.
 
@@ -54,7 +56,7 @@ This data frame contains the following columns:
 * MEDV - Median value of owner-occupied homes in $1000's
 
 
-
+**Importing Data**
 
 ```{r, echo=FALSE}
 
@@ -65,6 +67,8 @@ boston.df <- read.csv("https://raw.githubusercontent.com/jotsap/DS7333/master/da
 ```
 
 
+
+**Cursory Data Exploration**
 
 ```{r, echo=FALSE}
 
@@ -78,6 +82,8 @@ summary(boston.df)
 ```
 
 
+Skim allows a quick visual examination of each variable's range
+
 ```{r, echo=FALSE}
 
 #skim dataframe
@@ -86,7 +92,9 @@ skim(boston.df)
 
 ```
 
-## Finding Missing Data
+
+
+**Missing Data**
 
 No missing values found
 
@@ -103,6 +111,257 @@ aggr(boston.df,
 
 
 ```
+
+
+
+##Initial Regression Model
+
+We are doing a regression on full data set, predicting MEDV, the median value of owner-occupied homes, using the other 13 parameters.
+
+
+**Exclude vs Omit**
+
+Using na.exclude pads the residuals and fitted values with NAs where there were missing values. Other functions do not use the na.action, but instead have a different argument (with some default) for how they will handle missing values. For example, the mean command will, by default, return NA if there are any NAs in the passed object.
+
+
+```{r, echo=FALSE}
+
+# initial full regression
+
+boston.lm <- lm( MEDV ~ . , data = boston.df, na.action = na.omit  )
+
+summary(boston.lm)
+
+```
+
+
+**RESULTS**
+
+For "goodness of fit" we ;ppl at the adjusted R-squared value [which penalizes for large numbers of predictors, and get a score of 0.7338. Which means roughly 73.4% of the MEDV response variable is accounted for by the other 13 predictors.
+
+
+NOTE: Because AGE and INDUS were found to not be statistically significant we will *not* use those for the missing data exercises
+
+
+
+Coefficients:
+              Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  3.646e+01  5.103e+00   7.144 3.28e-12 ***
+CRIM        -1.080e-01  3.286e-02  -3.287 0.001087 ** 
+ZN           4.642e-02  1.373e-02   3.382 0.000778 ***
+INDUS        2.056e-02  6.150e-02   0.334 0.738288    
+CHAS         2.687e+00  8.616e-01   3.118 0.001925 ** 
+NOX         -1.777e+01  3.820e+00  -4.651 4.25e-06 ***
+RM           3.810e+00  4.179e-01   9.116  < 2e-16 ***
+AGE          6.922e-04  1.321e-02   0.052 0.958229    
+DIS         -1.476e+00  1.995e-01  -7.398 6.01e-13 ***
+RAD          3.060e-01  6.635e-02   4.613 5.07e-06 ***
+TAX         -1.233e-02  3.760e-03  -3.280 0.001112 ** 
+PTRATIO     -9.527e-01  1.308e-01  -7.283 1.31e-12 ***
+B            9.312e-03  2.686e-03   3.467 0.000573 ***
+LSTAT       -5.248e-01  5.072e-02 -10.347  < 2e-16 ***
+
+
+
+
+
+##MCAR
+
+
+First generate vector of *unique* random numbers to correspond to each percentage
+
+* 1% - 5 entries
+* 5% - 25 entries
+* 10% - 51 entries
+* 20% - 102 entries
+* 33% - 168 entries
+* 50% - 253 entries 
+
+
+**Value to be Deleted**
+* PTRATIO - pupil-teacher ratio by town
+
+
+
+Create vector to serve as sample index for creating NA values
+
+
+```{r, echo=FALSE}
+
+# replace set to FALSE ensures no repeating numbers in sample vector
+
+# 1% - 5 entries
+base::sample(1:506, 5, replace = F) -> index_01
+
+# 5% - 25 entires
+base::sample(1:506, 25, replace = F) -> index_05
+
+# 10% - 50 entires
+base::sample(1:506, 51, replace = F) -> index_10
+
+# 20% - 100 entries
+base::sample(1:506, 102, replace = F) -> index_20
+
+# 33% - 165 entries
+base::sample(1:506, 168, replace = F) -> index_33
+
+# 50% - 250 entries 
+base::sample(1:506, 253, replace = F) -> index_50
+
+```
+
+
+
+**Create different boston samples with NA for PTRATIO**
+
+
+1% - 5 entries 
+
+```{r, echo=FALSE}
+
+# create separate file
+boston.df -> boston_mcar_01.df
+# assign NA to PTRATIO
+boston_mcar_01.df[index_01,'PTRATIO'] <- NA
+# validate results
+
+head(boston_mcar_01.df[index_01,'PTRATIO'])
+
+aggr(boston_mcar_01.df, 
+     prop = FALSE, 
+     combined = TRUE, 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     sortCombs = TRUE)
+
+```
+
+
+5% - 25 entries
+
+```{r, echo=FALSE}
+
+# create separate file
+boston.df -> boston_mcar_05.df
+# assign NA to PTRATIO
+boston_mcar_05.df[index_05,'PTRATIO'] <- NA
+# validate results
+
+head(boston_mcar_05.df[index_05,'PTRATIO'])
+
+aggr(boston_mcar_05.df, 
+     prop = FALSE, 
+     combined = TRUE, 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     sortCombs = TRUE)
+
+```
+
+
+10% - 51 entries
+
+```{r, echo=FALSE}
+
+# create separate file
+boston.df -> boston_mcar_10.df
+# assign NA to PTRATIO
+boston_mcar_10.df[index_10,'PTRATIO'] <- NA
+# validate results
+
+head(boston_mcar_10.df[index_10,'PTRATIO'])
+
+aggr(boston_mcar_10.df, 
+     prop = FALSE, 
+     combined = TRUE, 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     sortCombs = TRUE)
+
+```
+
+
+20% - 102 entries
+
+```{r, echo=FALSE}
+
+# create separate file
+boston.df -> boston_mcar_20.df
+# assign NA to PTRATIO
+boston_mcar_20.df[index_20,'PTRATIO'] <- NA
+# validate results
+
+head(boston_mcar_20.df[index_20,'PTRATIO'])
+
+aggr(boston_mcar_20.df, 
+     prop = FALSE, 
+     combined = TRUE, 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     sortCombs = TRUE)
+
+```
+
+
+33% - 168 entries
+
+```{r, echo=FALSE}
+
+# create separate file
+boston.df -> boston_mcar_33.df
+# assign NA to PTRATIO
+boston_mcar_33.df[index_33,'PTRATIO'] <- NA
+# validate results
+
+head(boston_mcar_33.df[index_33,'PTRATIO'])
+
+aggr(boston_mcar_33.df, 
+     prop = FALSE, 
+     combined = TRUE, 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     sortCombs = TRUE)
+
+```
+
+
+50% - 253 entries
+
+```{r, echo=FALSE}
+
+# create separate file
+boston.df -> boston_mcar_50.df
+# assign NA to PTRATIO
+boston_mcar_50.df[index_50,'PTRATIO'] <- NA
+# validate results
+
+head(boston_mcar_50.df[index_50,'PTRATIO'])
+
+aggr(boston_mcar_50.df, 
+     prop = FALSE, 
+     combined = TRUE, 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     sortCombs = TRUE)
+
+```
+
+
+
+
+
+
+```{r, echo=FALSE}
+
+# 
+
+
+```
+
+
+
+
+
 
 
 
@@ -277,6 +536,29 @@ boston_mar_30.df[boston_mar_30.df$TAX <= 287, c("CRIM","RAD")]
 
 
 
+
+
+
+
+
+```{r, echo=FALSE}
+
+# 
+
+
+```
+
+
+
+
+
+
+```{r, echo=FALSE}
+
+# 
+
+
+```
 
 
 
