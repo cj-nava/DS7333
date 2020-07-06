@@ -134,6 +134,15 @@ summary(boston.lm)
 
 ```
 
+Improvements for different imputation methods can be measured with various statistics. Adjusted R-square or coefficient of determination can help us assess the models overall quality. This value would help us explain the proportion of variance of median house prices. Fitting a linear regression model without imputation results in a R-square of .7338. The accuracy of the model can be captured by looking at our residuals or actual median house prices minus predicted house prices. The baseline model results in a total sum of square errors of 11078. The goal will be to have a large R-square and small sum of squares error value.
+ 
+```{r}
+plot(boston.lm$fitted, boston.lm$residuals, xlab = "Fitted Values", ylab = "Residuals")
+abline(0,0)
+
+deviance(boston.lm)
+
+```
 
 **RESULTS**
 
