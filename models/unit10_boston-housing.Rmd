@@ -14,6 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(VIM)
 library(skimr)
+library(mice) # used for multiple imputation
 
 ```
 
@@ -134,13 +135,19 @@ summary(boston.lm)
 
 ```
 
-Improvements for different imputation methods can be measured with various statistics. Adjusted R-square or coefficient of determination can help us assess the models overall quality. This value would help us explain the proportion of variance of median house prices. Fitting a linear regression model without imputation results in a R-square of .7338. The accuracy of the model can be captured by looking at our residuals or actual median house prices minus predicted house prices. The baseline model results in a total sum of square errors of 11078. The goal will be to have a large R-square and small sum of squares error value.
+Improvements for different imputation methods can be measured with various statistics. Adjusted R-square or coefficient of determination can help us assess the models overall quality. This value would help us explain the proportion of variance of median house prices with the given predictor variables. Fitting a linear regression model without imputation results in a R-square of .7338. The accuracy of the model can be captured by looking at our residuals or actual median house prices minus predicted house prices. The baseline model results in a total sum of square errors of 11078. The goal will be to have a large R-square and small sum of squares error value. These results reflect the effect of listwise deletion on data missing completely at random (MCAR).
  
 ```{r}
 plot(boston.lm$fitted, boston.lm$residuals, xlab = "Fitted Values", ylab = "Residuals")
 abline(0,0)
+```
 
-deviance(boston.lm)
+```{r}
+#Sum of Square 
+print(paste0("Residual sum of Square: ", deviance(boston.lm)))
+
+#summary
+summary(boston.lm)
 
 ```
 
@@ -356,14 +363,19 @@ aggr(boston_mcar_50.df,
 ```
 
 
-
+We will measure the effect of single imputation and multiple imputation using the PTRATIO. Mice uses conditional multiple imputation that does not require a normal distribution. For our single imputation method we will use a global mean to replace our missing values for PTRATIO.
 
 
 
 ```{r, echo=FALSE}
 
-# 
+imp_50 <- mice(boston_mcar_50.df,  m = 5)
 
+boston.lm50 <- lm( MEDV ~ . , data = imp_50  )
+
+modelFit50 <- with(boston.lm50,lm(MEDV~ .))
+
+summary(pool(modelFit50))
 
 ```
 
