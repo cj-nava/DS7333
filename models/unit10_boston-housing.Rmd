@@ -402,11 +402,24 @@ fitimp <- with(anesimp_long_mids,
 
 #summary(pool(fitimp))
 pool.r.squared(fitimp, adjusted=TRUE)
+res= sapply(fit[[4]],residuals)
 ```
 
 
 
+```{r}
+  RS1=NULL
+  PS1=NULL
 
+  for(i in 1:5){
+  RS1=rbind(RS1,residuals(fitimp$analyses[[i]]))
+  RS=colMeans(RS1)
+  PS1=rbind(PS1,predict(fitimp$analyses[[i]])) 
+  PS=colMeans(PS1)}
+
+
+  plot(RS,PS)
+```
 
 
 
