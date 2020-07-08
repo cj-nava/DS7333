@@ -365,18 +365,43 @@ aggr(boston_mcar_50.df,
 
 We will measure the effect of single imputation and multiple imputation using the PTRATIO. Mice uses conditional multiple imputation that does not require a normal distribution. For our single imputation method we will use a global mean to replace our missing values for PTRATIO.
 
-
+We impute the data with Mice with default parameters and return 5 different imputations that are then pooled together. The default imputation method is applied or predictive mean matching. (add additional notes describing predictive mean matching)
 
 ```{r, echo=FALSE}
 
 imp_50 <- mice(boston_mcar_50.df,  m = 5)
 
-boston.lm50 <- lm( MEDV ~ . , data = imp_50  )
+head(imp_50$imp$PTRATIO)
 
-modelFit50 <- with(boston.lm50,lm(MEDV~ .))
+```
 
-summary(pool(modelFit50))
+We incorporate all 5 imputation possibilities back into our data and transform it into a long dataframe. Each of this imputed values represent a sample from a distribution. 
 
+```{r}
+boston.lm50_long <- complete(imp_50, action="long", include = TRUE)
+
+table(boston.lm50_long$.imp)
+
+```
+
+We change our dataframe to type a mids or multiply imputed object.
+
+```{r}
+
+# Convert back to mids type - mice can work with this type
+anesimp_long_mids <- as.mids(boston.lm50_long)
+
+```
+
+We run our linear model using this object which runs all 5 different iterations of our data set. Using the pool function from Mice we take the average of every model 
+
+```{r}
+
+fitimp <- with(anesimp_long_mids,
+               lm(MEDV ~   CRIM + ZN + INDUS + CHAS + NOX + RM + AGE + DIS + RAD + TAX + PTRATIO + B + LSTAT))
+
+#summary(pool(fitimp))
+pool.r.squared(fitimp, adjusted=TRUE)
 ```
 
 
