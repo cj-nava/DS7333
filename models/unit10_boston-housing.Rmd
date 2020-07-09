@@ -1,7 +1,7 @@
 ---
 title: "unit10_boston-housing"
 author: "Martin Garcia, Michael Catalano, Jeremy Otsap, Christian Nava"
-date: "6/26/2020"
+date: "7/8/2020"
 output: 
   html_document:
     keep_md: true
@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(VIM)
 library(skimr)
-library(mice) # used for multiple imputation
+library(na.tools)
 
 ```
 
@@ -73,7 +73,7 @@ boston.df <- read.csv("https://raw.githubusercontent.com/jotsap/DS7333/master/da
 
 ```{r, echo=FALSE}
 
-#explore dataframe
+#explore data frame
 
 str(boston.df)
 head(boston.df)
@@ -92,6 +92,31 @@ skim(boston.df)
 
 
 ```
+
+
+
+
+**Data Visualization**
+
+
+```{r, echo=FALSE}
+
+# loop through all parameters as histogram
+
+bostonlength <- length(boston.df)
+#i <- 1
+
+for (i in 1:bostonlength) {
+  # hist(boston.df[,i])
+  print( boxplot(boston.df[,i])$out )
+  i = i + 1
+}
+
+
+```
+
+
+
 
 
 
@@ -131,51 +156,36 @@ Using na.exclude pads the residuals and fitted values with NAs where there were 
 
 boston.lm <- lm( MEDV ~ . , data = boston.df, na.action = na.omit  )
 
+# model results for goodniess of fit using adj r-sqr
 summary(boston.lm)
 
-```
+# sse for loss
+print("SSE for model is: ")
+sum(boston.lm$residuals ^ 2)
 
-Improvements for different imputation methods can be measured with various statistics. Adjusted R-square or coefficient of determination can help us assess the models overall quality. This value would help us explain the proportion of variance of median house prices with the given predictor variables. Fitting a linear regression model without imputation results in a R-square of .7338. The accuracy of the model can be captured by looking at our residuals or actual median house prices minus predicted house prices. The baseline model results in a total sum of square errors of 11078. The goal will be to have a large R-square and small sum of squares error value. These results reflect the effect of listwise deletion on data missing completely at random (MCAR).
- 
-```{r}
-plot(boston.lm$fitted, boston.lm$residuals, xlab = "Fitted Values", ylab = "Residuals")
-abline(0,0)
-```
+# mse for loss
+print("MSE for model is: ")
+mean(boston.lm$residuals ^ 2)
 
-```{r}
-#Sum of Square 
-print(paste0("Residual sum of Square: ", deviance(boston.lm)))
 
-#summary
-summary(boston.lm)
+
 
 ```
+
 
 **RESULTS**
 
 For "goodness of fit" we ;ppl at the adjusted R-squared value [which penalizes for large numbers of predictors, and get a score of 0.7338. Which means roughly 73.4% of the MEDV response variable is accounted for by the other 13 predictors.
 
+The Sum of Squares Error [SSE] for model is: 11078.78
+
+The Mean Square Error [MSE] for model is: 21.89483
 
 NOTE: Because AGE and INDUS were found to not be statistically significant we will *not* use those for the missing data exercises
 
 
 
-Coefficients:
-              Estimate Std. Error t value Pr(>|t|)    
-(Intercept)  3.646e+01  5.103e+00   7.144 3.28e-12 ***
-CRIM        -1.080e-01  3.286e-02  -3.287 0.001087 ** 
-ZN           4.642e-02  1.373e-02   3.382 0.000778 ***
-INDUS        2.056e-02  6.150e-02   0.334 0.738288    
-CHAS         2.687e+00  8.616e-01   3.118 0.001925 ** 
-NOX         -1.777e+01  3.820e+00  -4.651 4.25e-06 ***
-RM           3.810e+00  4.179e-01   9.116  < 2e-16 ***
-AGE          6.922e-04  1.321e-02   0.052 0.958229    
-DIS         -1.476e+00  1.995e-01  -7.398 6.01e-13 ***
-RAD          3.060e-01  6.635e-02   4.613 5.07e-06 ***
-TAX         -1.233e-02  3.760e-03  -3.280 0.001112 ** 
-PTRATIO     -9.527e-01  1.308e-01  -7.283 1.31e-12 ***
-B            9.312e-03  2.686e-03   3.467 0.000573 ***
-LSTAT       -5.248e-01  5.072e-02 -10.347  < 2e-16 ***
+
 
 
 
@@ -251,6 +261,7 @@ aggr(boston_mcar_01.df,
      sortCombs = TRUE)
 
 ```
+
 
 
 5% - 25 entries
@@ -363,62 +374,201 @@ aggr(boston_mcar_50.df,
 ```
 
 
-We will measure the effect of single imputation and multiple imputation using the PTRATIO. Mice uses conditional multiple imputation that does not require a normal distribution. For our single imputation method we will use a global mean to replace our missing values for PTRATIO.
 
-We impute the data with Mice with default parameters and return 5 different imputations that are then pooled together. The default imputation method is applied or predictive mean matching. (add additional notes describing predictive mean matching)
+
+###MCAR Regression: Pairwise Deletion Using Mean Substitution
+
+
+**1% - 5 entries**
+
+Adjusted R-squared:  0.7344
+[1] "SSE for model is: "
+[1] 11052.98
+[1] "MSE for model is: "
+[1] 21.84383
+
 
 ```{r, echo=FALSE}
 
-imp_50 <- mice(boston_mcar_50.df,  m = 5)
+# mean substitution
+boston_mcar_01.df$PTRATIO <- na.mean(boston_mcar_01.df$PTRATIO)
 
-head(imp_50$imp$PTRATIO)
+# regression model
+boston_mcar_01.lm <- lm( MEDV ~ . , data = boston_mcar_01.df )
 
-```
+# model results for goodniess of fit using adj r-sqr
+summary(boston_mcar_01.lm)
 
-We incorporate all 5 imputation possibilities back into our data and transform it into a long dataframe. Each of this imputed values represent a sample from a distribution. 
+# sse for loss
+print("SSE for model is: ")
+sum(boston_mcar_01.lm$residuals ^ 2)
 
-```{r}
-boston.lm50_long <- complete(imp_50, action="long", include = TRUE)
+# mse for loss
+print("MSE for model is: ")
+mean(boston_mcar_01.lm$residuals ^ 2)
 
-table(boston.lm50_long$.imp)
 
-```
-
-We change our dataframe to type a mids or multiply imputed object.
-
-```{r}
-
-# Convert back to mids type - mice can work with this type
-anesimp_long_mids <- as.mids(boston.lm50_long)
-
-```
-
-We run our linear model using this object which runs all 5 different iterations of our data set. Using the pool function from Mice we take the average of every model 
-
-```{r}
-
-fitimp <- with(anesimp_long_mids,
-               lm(MEDV ~   CRIM + ZN + INDUS + CHAS + NOX + RM + AGE + DIS + RAD + TAX + PTRATIO + B + LSTAT))
-
-#summary(pool(fitimp))
-pool.r.squared(fitimp, adjusted=TRUE)
-res= sapply(fit[[4]],residuals)
 ```
 
 
 
-```{r}
-  RS1=NULL
-  PS1=NULL
+**5% - 25 entries**
 
-  for(i in 1:5){
-  RS1=rbind(RS1,residuals(fitimp$analyses[[i]]))
-  RS=colMeans(RS1)
-  PS1=rbind(PS1,predict(fitimp$analyses[[i]])) 
-  PS=colMeans(PS1)}
+Adjusted R-squared:  0.7313
+
+[1] "SSE for model is: "
+[1] 11182.17
+[1] "MSE for model is: "
+[1] 22.09915
+
+```{r, echo=FALSE}
+
+# mean substitution
+boston_mcar_05.df$PTRATIO <- na.mean(boston_mcar_05.df$PTRATIO)
+
+# regression model
+boston_mcar_05.lm <- lm( MEDV ~ . , data = boston_mcar_05.df )
+
+# model results for goodniess of fit using adj r-sqr
+summary(boston_mcar_05.lm)
+
+# sse for loss
+print("SSE for model is: ")
+sum(boston_mcar_05.lm$residuals ^ 2)
+
+# mse for loss
+print("MSE for model is: ")
+mean(boston_mcar_05.lm$residuals ^ 2)
 
 
-  plot(RS,PS)
+```
+
+
+
+**10% - 51 entries**
+
+Adjusted R-squared:  0.7345 
+[1] "SSE for model is: "
+[1] 11049.58
+[1] "MSE for model is: "
+[1] 21.83712
+
+```{r, echo=FALSE}
+
+# mean substitution
+boston_mcar_10.df$PTRATIO <- na.mean(boston_mcar_10.df$PTRATIO)
+
+# regression model
+boston_mcar_10.lm <- lm( MEDV ~ . , data = boston_mcar_10.df )
+
+# model results for goodniess of fit using adj r-sqr
+summary(boston_mcar_10.lm)
+
+# sse for loss
+print("SSE for model is: ")
+sum(boston_mcar_10.lm$residuals ^ 2)
+
+# mse for loss
+print("MSE for model is: ")
+mean(boston_mcar_10.lm$residuals ^ 2)
+
+
+```
+
+
+
+**20% - 102 entries**
+
+Adjusted R-squared:  0.7231 
+[1] "SSE for model is: "
+[1] 11523.58
+[1] "MSE for model is: "
+[1] 22.77388
+
+```{r, echo=FALSE}
+
+# mean substitution
+boston_mcar_20.df$PTRATIO <- na.mean(boston_mcar_20.df$PTRATIO)
+
+# regression model
+boston_mcar_20.lm <- lm( MEDV ~ . , data = boston_mcar_20.df )
+
+# model results for goodniess of fit using adj r-sqr
+summary(boston_mcar_20.lm)
+
+# sse for loss
+print("SSE for model is: ")
+sum(boston_mcar_20.lm$residuals ^ 2)
+
+# mse for loss
+print("MSE for model is: ")
+mean(boston_mcar_20.lm$residuals ^ 2) 
+
+
+```
+
+
+
+**33% - 168 entries**
+
+Adjusted R-squared:  0.7205 
+[1] "SSE for model is: "
+[1] 11632.02
+[1] "MSE for model is: "
+[1] 22.98819
+
+```{r, echo=FALSE}
+
+# mean substitution
+boston_mcar_33.df$PTRATIO <- na.mean(boston_mcar_33.df$PTRATIO)
+
+# regression model
+boston_mcar_33.lm <- lm( MEDV ~ . , data = boston_mcar_33.df )
+
+# model results for goodniess of fit using adj r-sqr
+summary(boston_mcar_33.lm)
+
+# sse for loss
+print("SSE for model is: ")
+sum(boston_mcar_33.lm$residuals ^ 2)
+
+# mse for loss
+print("MSE for model is: ")
+mean(boston_mcar_33.lm$residuals ^ 2) 
+
+
+```
+
+
+
+**50% - 253 entries** 
+
+Adjusted R-squared:  0.7142 
+[1] "SSE for model is: "
+[1] 11894.22
+[1] "MSE for model is: "
+[1] 23.50637
+
+```{r, echo=FALSE}
+
+# mean substitution
+boston_mcar_50.df$PTRATIO <- na.mean(boston_mcar_50.df$PTRATIO)
+
+# regression model
+boston_mcar_50.lm <- lm( MEDV ~ . , data = boston_mcar_50.df )
+
+# model results for goodniess of fit using adj r-sqr
+summary(boston_mcar_50.lm)
+
+# sse for loss
+print("SSE for model is: ")
+sum(boston_mcar_50.lm$residuals ^ 2)
+
+# mse for loss
+print("MSE for model is: ")
+mean(boston_mcar_50.lm$residuals ^ 2) 
+
+
 ```
 
 
@@ -429,183 +579,322 @@ res= sapply(fit[[4]],residuals)
 
 
 **Determining Parameter for Deletion**
-* 10%: TAX <= 233 – [54 values 10.67%]
-* 20%: TAX <= 270 – [99 values 19.565%]
-* 30%: TAX <= 287 – [149 values 29.447%]
+AGE < 80 = 266 entries 
 
 **Values to be Deleted**
 * CRIM - per capita crime rate by town
 * RAD - index of accessibility to radial highways
 
 
-###MAR 10%
+
+
+```{r, echo=FALSE}
+
+# list rows with AGE < 80 
+boston.df[boston.df$AGE < 80,c("CRIM","RAD")]
+
+
+
+# create initial MAR index
+rownames( boston.df[boston.df$AGE < 80,c("CRIM","RAD")] ) %>% as.numeric() -> index_mar
+
+#create 10% MAR index
+sample(index_mar, 50 ) -> index_mar_10
+
+#create 20% MAR index
+sample(index_mar, 100) -> index_mar_20
+
+#create 30% MAR index
+sample(index_mar, 150) -> index_mar_30
+
+
+```
+
+
+**Replacement**
 
 ```{r, echo=FALSE}
 
 # create 10% MAR dataframe
 boston.df -> boston_mar_10.df
 
-# list rows with TAX <= 233 
-boston_mar_10.df[boston_mar_10.df$TAX <= 233,c("CRIM","RAD")]
+# create 20% MAR dataframe
+boston.df -> boston_mar_20.df
 
-
-
-```
-
-
-
-```{r, echo=FALSE}
+# create 30% MAR dataframe
+boston.df -> boston_mar_30.df
 
 
 #assign NA to CRIM for 10% MAR
-boston_mar_10.df$CRIM[boston_mar_10.df$TAX <= 233] <- NA
+boston_mar_10.df[index_mar_10, c("CRIM","RAD")] <- NA
 
-#assign NA to RAD for 10% MAR
-boston_mar_10.df$RAD[boston_mar_10.df$TAX <= 233] <- NA
+#assign NA to CRIM for 20% MAR
+boston_mar_20.df[index_mar_20, c("CRIM","RAD")] <- NA
 
+#assign NA to CRIM for 30% MAR
+boston_mar_30.df[index_mar_30, c("CRIM","RAD")] <- NA
 
 
 ```
 
 
+
+###MAR 10%
+
+When AGE < 80, 10% of the entries for CRIM and RAD will be replaced with the NA value
+
+
+**Validation**
 
 ```{r, echo=FALSE}
 
-# list rows with missing values
-boston_mar_10.df[is.na(boston_mar_10.df$CRIM),c("CRIM","RAD","TAX")]
+### 10% MAR
 
-# list rows with TAX <= 233 
-boston_mar_10.df[boston_mar_10.df$TAX <= 233, c("CRIM","RAD")]
+# list rows with missing values
+boston_mar_10.df[is.na(boston_mar_10.df$CRIM),c("CRIM","RAD","AGE")]
+
+# list rows with AGE < 80 
+boston_mar_10.df[boston_mar_10.df$AGE < 80, c("CRIM","RAD","AGE")]
 
 ```
 
 
+**Regression Using Mean Substitution**
+
+Adjusted R-squared:  0.7312 
+[1] "SSE for model is: "
+[1] 11188.48
+[1] "MSE for model is: "
+[1] 22.11163
+
+```{r, echo=FALSE}
+
+# mean substitution for CRIM
+boston_mar_10.df$CRIM <- na.mean(boston_mar_10.df$CRIM)
+
+#mean substitution for RAD
+boston_mar_10.df$RAD <- na.mean(boston_mar_10.df$RAD)
+
+# regression model
+boston_mar_10.lm <- lm( MEDV ~ . , data = boston_mar_10.df )
+
+# model results for goodniess of fit using adj r-sqr
+summary(boston_mar_10.lm)
+
+# sse for loss
+print("SSE for model is: ")
+sum(boston_mar_10.lm$residuals ^ 2)
+
+# mse for loss
+print("MSE for model is: ")
+mean(boston_mar_10.lm$residuals ^ 2) 
 
 
 
-
+```
 
 
 
 
 ###MAR 20%
 
+When AGE < 80, 20% of the entries for CRIM and RAD will be replaced with the NA value
 
 
-```{r, echo=FALSE}
-
-# create 10% MAR dataframe
-boston.df -> boston_mar_20.df
-
-# list rows with TAX <= 233 
-boston_mar_20.df[boston_mar_20.df$TAX <= 270,c("CRIM","RAD")]
-
-
-
-```
-
-
+**Validation**
 
 ```{r, echo=FALSE}
 
-
-#assign NA to CRIM for 10% MAR
-boston_mar_20.df$CRIM[boston_mar_20.df$TAX <= 270] <- NA
-
-#assign NA to RAD for 10% MAR
-boston_mar_20.df$RAD[boston_mar_20.df$TAX <= 270] <- NA
-
-
-
-```
-
-
-
-```{r, echo=FALSE}
+### 20% MAR
 
 # list rows with missing values
-boston_mar_20.df[is.na(boston_mar_20.df$CRIM),c("CRIM","RAD","TAX")]
+boston_mar_20.df[is.na(boston_mar_20.df$CRIM),c("CRIM","RAD","AGE")]
 
-# list rows with TAX <= 233 
-boston_mar_20.df[boston_mar_20.df$TAX <= 270, c("CRIM","RAD")]
+# list rows with AGE < 80 
+boston_mar_20.df[boston_mar_20.df$AGE < 80, c("CRIM","RAD","AGE")]
 
 ```
 
 
+**Regression Using Mean Substitution**
+
+Adjusted R-squared:  0.7292 
+[1] "SSE for model is: "
+[1] 11267.98
+[1] "MSE for model is: "
+[1] 22.26873
+
+```{r, echo=FALSE}
+
+# mean substitution for CRIM
+boston_mar_20.df$CRIM <- na.mean(boston_mar_20.df$CRIM)
+
+#mean substitution for RAD
+boston_mar_20.df$RAD <- na.mean(boston_mar_20.df$RAD)
+
+# regression model
+boston_mar_20.lm <- lm( MEDV ~ . , data = boston_mar_20.df )
+
+# model results for goodniess of fit using adj r-sqr
+summary(boston_mar_20.lm)
+
+# sse for loss
+print("SSE for model is: ")
+sum(boston_mar_20.lm$residuals ^ 2)
+
+# mse for loss
+print("MSE for model is: ")
+mean(boston_mar_20.lm$residuals ^ 2) 
 
 
 
+```
 
 
 
 
 ###MAR 30%
 
+When AGE < 80, 30% of the entries for CRIM and RAD will be replaced with the NA value
+
+
+**Validation**
+
+```{r, echo=FALSE}
+
+### 30% MAR
+
+# list rows with missing values
+boston_mar_30.df[is.na(boston_mar_30.df$CRIM),c("CRIM","RAD","AGE")]
+
+# list rows with AGE < 80 
+boston_mar_30.df[boston_mar_30.df$AGE < 80, c("CRIM","RAD","AGE")]
+
+```
+
+
+**Regression Using Mean Substitution**
+
+Adjusted R-squared:  0.7325 
+[1] "SSE for model is: "
+[1] 11133.25
+[1] "MSE for model is: "
+[1] 22.00247
+
+```{r, echo=FALSE}
+
+# mean substitution for CRIM
+boston_mar_30.df$CRIM <- na.mean(boston_mar_30.df$CRIM)
+
+#mean substitution for RAD
+boston_mar_30.df$RAD <- na.mean(boston_mar_30.df$RAD)
+
+# regression model
+boston_mar_30.lm <- lm( MEDV ~ . , data = boston_mar_30.df )
+
+# model results for goodniess of fit using adj r-sqr
+summary(boston_mar_30.lm)
+
+# sse for loss
+print("SSE for model is: ")
+sum(boston_mar_30.lm$residuals ^ 2)
+
+# mse for loss
+print("MSE for model is: ")
+mean(boston_mar_30.lm$residuals ^ 2) 
+
+
+
+```
+
+
+
+
+
+##MNAR
+
+When TAX <= 279 entries will be replaced with the NA value
+
+* TAX <= 279 [128 values 25.3%]
+
+
+
 
 
 ```{r, echo=FALSE}
 
 # create 10% MAR dataframe
-boston.df -> boston_mar_30.df
+boston.df -> boston_mnar_25.df
 
-# list rows with TAX <= 233 
-boston_mar_30.df[boston_mar_30.df$TAX <= 287,c("CRIM","RAD")]
-
+# list rows with TAX <= 279 
+boston_mnar_25.df[boston_mnar_25.df$TAX <= 279,]
 
 
 ```
+
+
+**Replacement**
 
 
 
 ```{r, echo=FALSE}
 
+#assign NA to TAX <= 279 for 25% MNAR
+#boston_mnar_25.df[boston_mnar_25.df$TAX <= 279, ] <- NA
 
-#assign NA to CRIM for 10% MAR
-boston_mar_30.df$CRIM[boston_mar_30.df$TAX <= 287] <- NA
-
-#assign NA to RAD for 10% MAR
-boston_mar_30.df$RAD[boston_mar_30.df$TAX <= 287] <- NA
-
+boston_mnar_25.df$TAX <- ifelse(boston_mnar_25.df$TAX <= 279, NA, boston_mnar_25.df$TAX) 
 
 
 ```
 
-
+Validation
 
 ```{r, echo=FALSE}
 
-# list rows with missing values
-boston_mar_30.df[is.na(boston_mar_30.df$CRIM),c("CRIM","RAD","TAX")]
+aggr(boston_mnar_25.df, 
+     prop = FALSE, 
+     combined = TRUE, 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     sortCombs = TRUE)
 
-# list rows with TAX <= 233 
-boston_mar_30.df[boston_mar_30.df$TAX <= 287, c("CRIM","RAD")]
+
 
 ```
 
 
+**Regression Using Mean Substitution**
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Adjusted R-squared:  0.7292 
+[1] "SSE for model is: "
+[1] 11269.16
+[1] "MSE for model is: "
+[1] 22.27106
 
 ```{r, echo=FALSE}
 
-# 
+# mean substitution for TAX
+boston_mnar_25.df$TAX <- na.mean(boston_mnar_25.df$TAX)
+
+# regression model
+boston_mnar_25.lm <- lm( MEDV ~ . , data = boston_mnar_25.df )
+
+# model results for goodniess of fit using adj r-sqr
+summary(boston_mnar_25.lm)
+
+# sse for loss
+print("SSE for model is: ")
+sum(boston_mnar_25.lm$residuals ^ 2)
+
+# mse for loss
+print("MSE for model is: ")
+mean(boston_mnar_25.lm$residuals ^ 2) 
+
 
 
 ```
+
+
 
 
 
