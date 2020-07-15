@@ -1,5 +1,5 @@
 ---
-title: "unit10_boston-housing"
+title: "Unit 10 - Imputation with Boston Housing Data"
 author: "Martin Garcia, Michael Catalano, Jeremy Otsap, Christian Nava"
 date: "7/8/2020"
 output: 
@@ -15,7 +15,10 @@ library(tidyverse)
 library(VIM)
 library(skimr)
 library(na.tools)
-
+library(mice) #used for multiple imputation methods
+library(reshape2) # used to change our data shape from long to short and vice versa
+library(corrplot) # generates a correlation matrix for us
+library(naniar) # used to generate visualizations for missing data
 ```
 
 ## Boston Data Set 
@@ -23,17 +26,7 @@ library(na.tools)
 Using the Boston Housing Data Set examine the effect on loss for data Missing Completely at Random for 10% 20% and 50% of the data. Repeat the analysis for Missing at random and Missing Not at random. 
 
 
-MCAR
-MAR
-Monotone
-
-
-**https://www.kaggle.com/puxama/bostoncsv** 
-https://www.kaggle.com/c/boston-housing
-https://www.cs.toronto.edu/~delve/data/boston/bostonDetail.html
-
-
-##Initial Data Exploration
+## Initial Data Exploration
 
 **Data Description**
 
@@ -56,9 +49,6 @@ This data frame contains the following columns:
 * LSTAT - % lower status of the population
 * MEDV - Median value of owner-occupied homes in $1000's
 
-
-**Importing Data**
-
 ```{r, echo=FALSE}
 
 # loading data set
@@ -69,14 +59,15 @@ boston.df <- read.csv("https://raw.githubusercontent.com/jotsap/DS7333/master/da
 
 
 
-**Cursory Data Exploration**
+**Data Exploration**
+
+The dataset reflects numeric values both integer and float type data. 
 
 ```{r, echo=FALSE}
 
 #explore data frame
 
 str(boston.df)
-head(boston.df)
 summary(boston.df)
 
 
@@ -101,31 +92,23 @@ skim(boston.df)
 
 ```{r, echo=FALSE}
 
-# loop through all parameters as histogram
-
-bostonlength <- length(boston.df)
-#i <- 1
-
-for (i in 1:bostonlength) {
-  # hist(boston.df[,i])
-  print( boxplot(boston.df[,i])$out )
-  i = i + 1
-}
-
-
+ggplot(data = melt(boston.df), aes(x=variable, y=value)) + geom_boxplot(aes(fill=variable)) + coord_flip()
 ```
 
 
 
 
+```{r}
 
+boston_cor<-cor(boston.df)
+corrplot(boston_cor, method="color")
+```
 
 **Missing Data**
 
-No missing values found
+No missing values found in our initial Boston data set as validated below.
 
 ```{r, echo=FALSE}
-
 
 # from VIM package
 aggr(boston.df, 
@@ -135,19 +118,18 @@ aggr(boston.df,
      sortVars = TRUE, 
      sortCombs = TRUE)
 
-
 ```
 
 
 
-##Initial Regression Model
+## Initial Regression Model
 
 We are doing a regression on full data set, predicting MEDV, the median value of owner-occupied homes, using the other 13 parameters.
 
 
 **Exclude vs Omit**
 
-Using na.exclude pads the residuals and fitted values with NAs where there were missing values. Other functions do not use the na.action, but instead have a different argument (with some default) for how they will handle missing values. For example, the mean command will, by default, return NA if there are any NAs in the passed object.
+Using na.exclude pads the residuals and fitted values with NAs where there were missing values. Other functions do not use the na.action, but instead have a different argument (with some default) for how they will handle missing values. For example, the mean command will, by default, return NA if there are any NAs in the passed object. The example below creates a threshold to measure the effect of different imputations.
 
 
 ```{r, echo=FALSE}
@@ -168,31 +150,26 @@ print("MSE for model is: ")
 mean(boston.lm$residuals ^ 2)
 
 
-
-
 ```
 
 
 **RESULTS**
 
-For "goodness of fit" we ;ppl at the adjusted R-squared value [which penalizes for large numbers of predictors, and get a score of 0.7338. Which means roughly 73.4% of the MEDV response variable is accounted for by the other 13 predictors.
+Improvements for different imputation methods can be measured with various statistics. Adjusted R-square or coefficient of determination can help us assess the models overall quality. Adjusted R-squared value would help us explain the proportion of variance of median house prices with the given predictor variables while also penalizing for large number of predictors. Fitting a linear regression model without imputation results in a R-square of .7338, which means roughly 73.4% of the MEDV response variable is accounted for by the other 13 predictors. The accuracy of the model can be captured by looking at our residuals or actual median house prices minus predicted house prices. The baseline model results in a total sum of square errors of 11078. The goal will be to have a large R-square and small sum of squares error value. These results reflect the effect of listwise deletion on data missing completely at random (MCAR).
 
-The Sum of Squares Error [SSE] for model is: 11078.78
+<center>
+The Sum of Squares Error [SSE] for model is: <b>11078.78</b>
 
-The Mean Square Error [MSE] for model is: 21.89483
+The Mean Square Error [MSE] for model is: <b>21.89483</b>
+
+Adjusted R-squared: <b>.7338</b>
+</center>
 
 NOTE: Because AGE and INDUS were found to not be statistically significant we will *not* use those for the missing data exercises
 
 
 
-
-
-
-
-
-
-##MCAR
-
+## MCAR
 
 First generate vector of *unique* random numbers to correspond to each percentage
 
@@ -240,6 +217,7 @@ base::sample(1:506, 253, replace = F) -> index_50
 
 **Create different boston samples with NA for PTRATIO**
 
+We visualize the prorportion of missing value sets ranging from 1% to 50%, with their corresponding volume.
 
 1% - 5 entries 
 
@@ -374,9 +352,14 @@ aggr(boston_mcar_50.df,
 ```
 
 
+# Missing Completely at Random with Regression: Single Imputation & Multiple Imputation
+<br>
+
+We will measure the effect of single imputation and multiple imputation using the PTRATIO, or pupil to teacher ratio. For our single imputation method we will use a global mean to replace our missing values for PTRATIO. This is under the backdrop of observations that are missing completely at random, or MCAR. We assume the housing records were flooded and we lost a random number of data sets at different rates. We will also use listwise deletion for our data sets missing 1% and 50% to measure the magnified effect to our mean square error and adjusted R-square.
 
 
-###MCAR Regression: Pairwise Deletion Using Mean Substitution
+## Single Imputation with Mean
+
 
 
 **1% - 5 entries**
@@ -571,28 +554,160 @@ mean(boston_mcar_50.lm$residuals ^ 2)
 
 ```
 
+## Listwise Deletion at 1% MCAR and 50% MCAR
 
+```{r}
+lwd1 <- lm( MEDV ~ . , data = boston_mcar_01.df, na.action = na.omit  )
 
+# model results for goodness of fit using adj r-sqr
+summary(lwd1)
 
-
-##MAR
-
-
-**Determining Parameter for Deletion**
-AGE < 80 = 266 entries 
-
-**Values to be Deleted**
-* CRIM - per capita crime rate by town
-* RAD - index of accessibility to radial highways
-
-
-
+```
 
 ```{r, echo=FALSE}
 
+# sse for loss
+print(paste0("SSE for model is:  ", sum(lwd1$residuals ^ 2)))
+
+# mse for loss
+print(paste0("MSE for model is: ", mean(lwd1$residuals ^ 2)))
+
+```
+
+```{r}
+lwd50 <- lm( MEDV ~ . , data = boston_mcar_50.df, na.action = na.omit  )
+
+# model results for goodness of fit using adj r-sqr
+summary(lwd50)
+```
+
+```{r, echo=FALSE}
+# sse for loss
+print(paste0("SSE for model is: ",sum(lwd50$residuals ^ 2)))
+
+
+# mse for loss
+print(paste0("MSE for model is: ",mean(lwd50$residuals ^ 2)))
+
+
+```
+
+
+## Multiple Imputation with Mice
+
+We impute the data with Mice with default parameters and return 5 different imputations that are then pooled together. The default imputation method is applied or predictive mean matching. This method pools samples of complete data set, or uses actual values for those with complete data for our student to teacher ratio.
+
+```{r,results = 'hide'}  
+imp_01 <- mice(boston_mcar_01.df,  m = 5)
+imp_05 <- mice(boston_mcar_05.df,  m = 5)
+imp_10 <- mice(boston_mcar_10.df,  m = 5)
+imp_20 <- mice(boston_mcar_20.df,  m = 5)
+imp_33 <- mice(boston_mcar_33.df,  m = 5)
+```
+
+The function mice below will create 5 different imputation sets. The imputation sets are identified via the iter column.
+
+```{r}
+imp_50 <- mice(boston_mcar_50.df,  m = 5)
+```
+
+```{r}
+
+head(imp_50$imp$PTRATIO)
+
+```
+
+We incorporate all 5 imputation possibilities back into our data and transform it into a long dataframe. Each of these imputed values represent a sample from a distribution. 
+
+```{r, echo=FALSE}
+boston.lm01_long <- complete(imp_01, action="long", include = TRUE)
+boston.lm05_long <- complete(imp_05, action="long", include = TRUE)
+boston.lm10_long <- complete(imp_10, action="long", include = TRUE)
+boston.lm20_long <- complete(imp_20, action="long", include = TRUE)
+boston.lm33_long <- complete(imp_33, action="long", include = TRUE)
+```
+
+```{r}
+boston.lm50_long <- complete(imp_50, action="long", include = TRUE)
+
+```
+
+```{r}
+
+table(boston.lm50_long$.imp)
+
+```
+
+We change our dataframe to type a mids or multiply imputed object.
+
+```{r, echo=FALSE}
+
+# Convert back to mids type - mice can work with this type
+imp_long_mids01 <- as.mids(boston.lm01_long)
+imp_long_mids05 <- as.mids(boston.lm05_long)
+imp_long_mids10 <- as.mids(boston.lm10_long)
+imp_long_mids20 <- as.mids(boston.lm20_long)
+imp_long_mids33 <- as.mids(boston.lm33_long)
+```
+
+```{r}
+imp_long_mids50 <- as.mids(boston.lm50_long)
+```
+
+We run our linear model using this object which runs all 5 different iterations of our data set. Using the pool function from Mice we take the average of every model. 
+
+```{r, echo=FALSE}
+
+fitimp01 <- with(imp_long_mids01,
+               lm(MEDV ~   CRIM + ZN + INDUS + CHAS + NOX + RM + AGE + DIS + RAD + TAX + PTRATIO + B + LSTAT))
+fitimp05 <- with(imp_long_mids05,
+               lm(MEDV ~   CRIM + ZN + INDUS + CHAS + NOX + RM + AGE + DIS + RAD + TAX + PTRATIO + B + LSTAT))
+fitimp10 <- with(imp_long_mids10,
+               lm(MEDV ~   CRIM + ZN + INDUS + CHAS + NOX + RM + AGE + DIS + RAD + TAX + PTRATIO + B + LSTAT))
+fitimp20 <- with(imp_long_mids20,
+               lm(MEDV ~   CRIM + ZN + INDUS + CHAS + NOX + RM + AGE + DIS + RAD + TAX + PTRATIO + B + LSTAT))
+fitimp33 <- with(imp_long_mids33,
+               lm(MEDV ~   CRIM + ZN + INDUS + CHAS + NOX + RM + AGE + DIS + RAD + TAX + PTRATIO + B + LSTAT))
+```
+
+
+```{r}
+fitimp50 <- with(imp_long_mids50,
+               lm(MEDV ~   CRIM + ZN + INDUS + CHAS + NOX + RM + AGE + DIS + RAD + TAX + PTRATIO + B + LSTAT))
+
+```
+
+```{r}
+summary(pool(fitimp50))
+
+pool.r.squared(fitimp50, adjusted=TRUE)
+pool.r.squared(fitimp01, adjusted=TRUE)
+pool.r.squared(fitimp05, adjusted=TRUE)
+pool.r.squared(fitimp10, adjusted=TRUE)
+pool.r.squared(fitimp20, adjusted=TRUE)
+pool.r.squared(fitimp33, adjusted=TRUE)
+```
+
+## Results
+
+Notable was imputation using single imputation and listwise deletion when the amount of missing data was small. The effect of removing those observations resulted in a no differences to our adjusted R-square value when compared against a single imputation approach at an adjusted R-square of 73.11. This is close to as high as we can go with this linear model as the adjusted R-square for our original model with all the data is at 73.38. If we are ok with these results all approaches above work well, however if we want to optimize our model we might want to change to something completely different as the linear model creates a ceiling we can't exceed with imputation alone. We can however improve the model optimizing the model itself as imputation does little.
+
+# Missing at Random with Regression: Single Imputation & Multiple Imputation
+
+**Determining Parameter for Deletion**
+<br>
+AGE < 80 = 266 entries 
+
+**Values to be Deleted**
+<br>
+CRIM - per capita crime rate by town
+<br>
+RAD - index of accessibility to radial highways
+
+```{r, results = 'hide'}
+
 # list rows with AGE < 80 
 boston.df[boston.df$AGE < 80,c("CRIM","RAD")]
-
 
 
 # create initial MAR index
@@ -613,7 +728,7 @@ sample(index_mar, 150) -> index_mar_30
 
 **Replacement**
 
-```{r, echo=FALSE}
+```{r}
 
 # create 10% MAR dataframe
 boston.df -> boston_mar_10.df
@@ -625,28 +740,37 @@ boston.df -> boston_mar_20.df
 boston.df -> boston_mar_30.df
 
 
-#assign NA to CRIM for 10% MAR
+#assign NA to CRIM & RAD for 10% MAR
 boston_mar_10.df[index_mar_10, c("CRIM","RAD")] <- NA
 
-#assign NA to CRIM for 20% MAR
+#assign NA to CRIM & RAD for 20% MAR
 boston_mar_20.df[index_mar_20, c("CRIM","RAD")] <- NA
 
-#assign NA to CRIM for 30% MAR
+#assign NA to CRIM & RAD for 30% MAR
 boston_mar_30.df[index_mar_30, c("CRIM","RAD")] <- NA
 
 
 ```
 
+**Validation **
+
+We validate that 10, 20, and 30 percent of our data is missing with a quick glance at the graphs below.
+
+```{r}
+gg_miss_var(boston_mar_10.df, show_pct = TRUE)
+gg_miss_var(boston_mar_20.df, show_pct = TRUE)
+gg_miss_var(boston_mar_30.df, show_pct = TRUE)
+```
 
 
-###MAR 10%
+### MAR 10%
 
 When AGE < 80, 10% of the entries for CRIM and RAD will be replaced with the NA value
 
 
 **Validation**
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, results = 'hide'}
 
 ### 10% MAR
 
@@ -658,6 +782,10 @@ boston_mar_10.df[boston_mar_10.df$AGE < 80, c("CRIM","RAD","AGE")]
 
 ```
 
+
+
+
+## Single Imputation with Mean
 
 **Regression Using Mean Substitution**
 
@@ -694,16 +822,14 @@ mean(boston_mar_10.lm$residuals ^ 2)
 ```
 
 
-
-
-###MAR 20%
+### MAR 20%
 
 When AGE < 80, 20% of the entries for CRIM and RAD will be replaced with the NA value
 
 
 **Validation**
 
-```{r, echo=FALSE}
+```{r, echo=FALSE,results = 'hide' }
 
 ### 20% MAR
 
@@ -751,16 +877,14 @@ mean(boston_mar_20.lm$residuals ^ 2)
 ```
 
 
-
-
-###MAR 30%
+### MAR 30%
 
 When AGE < 80, 30% of the entries for CRIM and RAD will be replaced with the NA value
 
 
 **Validation**
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, results = 'hide'}
 
 ### 30% MAR
 
@@ -807,18 +931,52 @@ mean(boston_mar_30.lm$residuals ^ 2)
 
 ```
 
+## Multiple Imputation with Mice
 
+```{r}
 
+imp_10 <- mice(boston_mar_10.df,  m = 5)
+imp_20 <- mice(boston_mar_20.df,  m = 5)
+imp_30 <- mice(boston_mar_30.df,  m = 5)
 
+```
 
-##MNAR
+```{r}
+
+boston.lm10_long <- complete(imp_10, action="long", include = TRUE)
+boston.lm20_long <- complete(imp_20, action="long", include = TRUE)
+boston.lm30_long <- complete(imp_30, action="long", include = TRUE)
+
+```
+
+```{r}
+imp_long_mids10 <- as.mids(boston.lm10_long)
+imp_long_mids20 <- as.mids(boston.lm20_long)
+imp_long_mids30 <- as.mids(boston.lm30_long)
+```
+
+```{r}
+fitimp10 <- with(imp_long_mids10,
+               lm(MEDV ~   CRIM + ZN + INDUS + CHAS + NOX + RM + AGE + DIS + RAD + TAX + PTRATIO + B + LSTAT))
+fitimp20 <- with(imp_long_mids20,
+               lm(MEDV ~   CRIM + ZN + INDUS + CHAS + NOX + RM + AGE + DIS + RAD + TAX + PTRATIO + B + LSTAT))
+fitimp30 <- with(imp_long_mids30,
+               lm(MEDV ~   CRIM + ZN + INDUS + CHAS + NOX + RM + AGE + DIS + RAD + TAX + PTRATIO + B + LSTAT))
+```
+
+```{r}
+summary(pool(fitimp10))
+
+pool.r.squared(fitimp10, adjusted=TRUE)
+```
+
+# Missing Not at Random with Regression: Single Imputation & Multiple Imputation
+
+We explicitly select what data is missing which creates data imputation for data that is missing not at random.
 
 When TAX <= 279 entries will be replaced with the NA value
 
 * TAX <= 279 [128 values 25.3%]
-
-
-
 
 
 ```{r, echo=FALSE}
@@ -862,6 +1020,7 @@ aggr(boston_mnar_25.df,
 
 ```
 
+## Single Imputation with Mean
 
 **Regression Using Mean Substitution**
 
@@ -894,19 +1053,28 @@ mean(boston_mnar_25.lm$residuals ^ 2)
 
 ```
 
-
-
-
-
-
-
+## Multiple Imputation with Mice
 
 ```{r, echo=FALSE}
 
-# 
+imp_25 <- mice(boston_mnar_25.df,  m = 5)
+boston.lm25_long <- complete(imp_25, action="long", include = TRUE)
+imp_long_mids25 <- as.mids(boston.lm25_long)
+fitimp25 <- with(imp_long_mids25,
+               lm(MEDV ~   CRIM + ZN + INDUS + CHAS + NOX + RM + AGE + DIS + RAD + TAX + PTRATIO + B + LSTAT))
+summary(pool(fitimp25))
+
+pool.r.squared(fitimp25, adjusted=TRUE)
 
 
 ```
 
 
 
+# References
+<br>
+**https://www.kaggle.com/puxama/bostoncsv** 
+<br>
+https://www.kaggle.com/c/boston-housing
+<br>
+https://www.cs.toronto.edu/~delve/data/boston/bostonDetail.html
