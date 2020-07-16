@@ -369,9 +369,10 @@ summary {
 </div>
 
 
+<p>With the Boston housing data as our backdrop we observe the effect of different imputation methods ranging from single imputation via a global mean to multiple imputation methods. However this is dependent on missing data types, including missing completely at random, missing at random, and not missing at random. We assume the data ‘missing completely at random’ is a result of the flooding in the basement where the housing records are stored. We also highlight the effect of listwise deletion on two extreme examples, data missing 1% and 50% for our feature PTRATIO. Data missing at random removes data for our columns CRIM and RAD that are dependent on Age. With intent we remove TAX data for our example of ‘not missing at random’ by removing data TAX data when it is equal to or less than 279.</p>
 <div id="boston-data-set" class="section level2">
 <h2>Boston Data Set</h2>
-<p>Using the Boston Housing Data Set examine the effect on loss for data Missing Completely at Random for 10% 20% and 50% of the data. Repeat the analysis for Missing at random and Missing Not at random.</p>
+<p>The Boston housing data set contains median housing prices collected bt the US Census Services and contains quantitative feature data such as the crime rate by town or the average number of rooms per dwelling.</p>
 </div>
 <div id="initial-data-exploration" class="section level2">
 <h2>Initial Data Exploration</h2>
@@ -682,6 +683,7 @@ summary {
 <p><strong>Data Visualization</strong></p>
 <pre><code>## No id variables; using all as measure variables</code></pre>
 <p><img src="data:image/png;base64,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" /><!-- --></p>
+<p>Initially created a correlation matrix to view the impact of multicollinearity for predictor variables that show high correlation.</p>
 <pre class="r"><code>boston_cor&lt;-cor(boston.df)
 corrplot(boston_cor, method=&quot;color&quot;)</code></pre>
 <p><img src="data:image/png;base64,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" /><!-- --></p>
@@ -706,8 +708,8 @@ corrplot(boston_cor, method=&quot;color&quot;)</code></pre>
 ##     LSTAT     0
 ##      MEDV     0</code></pre>
 </div>
-<div id="initial-regression-model" class="section level2">
-<h2>Initial Regression Model</h2>
+<div id="initial-regression-model" class="section level1">
+<h1>Initial Regression Model</h1>
 <p>We are doing a regression on full data set, predicting MEDV, the median value of owner-occupied homes, using the other 13 parameters.</p>
 <p><strong>Exclude vs Omit</strong></p>
 <p>Using na.exclude pads the residuals and fitted values with NAs where there were missing values. Other functions do not use the na.action, but instead have a different argument (with some default) for how they will handle missing values. For example, the mean command will, by default, return NA if there are any NAs in the passed object. The example below creates a threshold to measure the effect of different imputations.</p>
@@ -754,8 +756,10 @@ Adjusted R-squared: <b>.7338</b>
 </center>
 <p>NOTE: Because AGE and INDUS were found to not be statistically significant we will <em>not</em> use those for the missing data exercises</p>
 </div>
-<div id="mcar" class="section level2">
-<h2>MCAR</h2>
+<div id="missing-completely-at-random-with-regression-single-imputation-multiple-imputation" class="section level1">
+<h1>Missing Completely at Random with Regression: Single Imputation &amp; Multiple Imputation</h1>
+<p><br></p>
+<p>We will measure the effect of single imputation and multiple imputation using the PTRATIO, or pupil to teacher ratio. For our single imputation method we will use a global mean to replace our missing values for PTRATIO. This is under the backdrop of observations that are missing completely at random, or MCAR. We assume the housing records were flooded and we lost a random number of data sets at different rates. We will also use listwise deletion for our data sets missing 1% and 50% to measure the magnified effect to our mean square error and adjusted R-square.</p>
 <p>First generate vector of <em>unique</em> random numbers to correspond to each percentage</p>
 <ul>
 <li>1% - 5 entries</li>
@@ -765,7 +769,7 @@ Adjusted R-squared: <b>.7338</b>
 <li>33% - 168 entries</li>
 <li>50% - 253 entries</li>
 </ul>
-<p><strong>Value to be Deleted</strong> * PTRATIO - pupil-teacher ratio by town</p>
+<p><strong>Value to be Deleted</strong> <br> PTRATIO - pupil-teacher ratio by town</p>
 <p>Create vector to serve as sample index for creating NA values</p>
 <p><strong>Create different boston samples with NA for PTRATIO</strong></p>
 <p>We visualize the prorportion of missing value sets ranging from 1% to 50%, with their corresponding volume.</p>
@@ -889,11 +893,6 @@ Adjusted R-squared: <b>.7338</b>
 ##         B     0
 ##     LSTAT     0
 ##      MEDV     0</code></pre>
-</div>
-<div id="missing-completely-at-random-with-regression-single-imputation-multiple-imputation" class="section level1">
-<h1>Missing Completely at Random with Regression: Single Imputation &amp; Multiple Imputation</h1>
-<p><br></p>
-<p>We will measure the effect of single imputation and multiple imputation using the PTRATIO, or pupil to teacher ratio. For our single imputation method we will use a global mean to replace our missing values for PTRATIO. This is under the backdrop of observations that are missing completely at random, or MCAR. We assume the housing records were flooded and we lost a random number of data sets at different rates. We will also use listwise deletion for our data sets missing 1% and 50% to measure the magnified effect to our mean square error and adjusted R-square.</p>
 <div id="single-imputation-with-mean" class="section level2">
 <h2>Single Imputation with Mean</h2>
 <p><strong>1% - 5 entries</strong></p>
@@ -904,34 +903,34 @@ Adjusted R-squared: <b>.7338</b>
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -15.5715  -2.7512  -0.5059   1.7711  26.1940 
+## -15.8057  -2.7430  -0.5208   1.8096  26.3074 
 ## 
 ## Coefficients:
 ##               Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)  3.691e+01  5.135e+00   7.187 2.47e-12 ***
-## CRIM        -1.079e-01  3.286e-02  -3.283 0.001099 ** 
-## ZN           4.522e-02  1.377e-02   3.283 0.001099 ** 
-## INDUS        2.533e-02  6.157e-02   0.411 0.680918    
-## CHAS         2.667e+00  8.616e-01   3.095 0.002081 ** 
-## NOX         -1.782e+01  3.820e+00  -4.665 3.98e-06 ***
-## RM           3.807e+00  4.179e-01   9.111  &lt; 2e-16 ***
-## AGE          5.222e-04  1.320e-02   0.040 0.968469    
-## DIS         -1.468e+00  1.995e-01  -7.358 7.86e-13 ***
-## RAD          3.137e-01  6.653e-02   4.715 3.15e-06 ***
-## TAX         -1.273e-02  3.756e-03  -3.388 0.000759 ***
-## PTRATIO     -9.700e-01  1.329e-01  -7.300 1.16e-12 ***
-## B            9.196e-03  2.685e-03   3.425 0.000666 ***
-## LSTAT       -5.258e-01  5.070e-02 -10.372  &lt; 2e-16 ***
+## (Intercept)  3.509e+01  5.067e+00   6.925 1.37e-11 ***
+## CRIM        -1.072e-01  3.298e-02  -3.252 0.001224 ** 
+## ZN           4.779e-02  1.376e-02   3.473 0.000560 ***
+## INDUS        1.677e-02  6.167e-02   0.272 0.785793    
+## CHAS         2.668e+00  8.651e-01   3.084 0.002159 ** 
+## NOX         -1.709e+01  3.816e+00  -4.478 9.37e-06 ***
+## RM           3.886e+00  4.181e-01   9.295  &lt; 2e-16 ***
+## AGE          8.995e-04  1.326e-02   0.068 0.945944    
+## DIS         -1.481e+00  2.001e-01  -7.402 5.87e-13 ***
+## RAD          3.018e-01  6.654e-02   4.535 7.25e-06 ***
+## TAX         -1.255e-02  3.772e-03  -3.326 0.000947 ***
+## PTRATIO     -9.173e-01  1.307e-01  -7.019 7.43e-12 ***
+## B            9.415e-03  2.696e-03   3.492 0.000522 ***
+## LSTAT       -5.255e-01  5.089e-02 -10.326  &lt; 2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 4.744 on 492 degrees of freedom
-## Multiple R-squared:  0.7408, Adjusted R-squared:  0.7339 
-## F-statistic: 108.1 on 13 and 492 DF,  p-value: &lt; 2.2e-16</code></pre>
+## Residual standard error: 4.762 on 492 degrees of freedom
+## Multiple R-squared:  0.7388, Adjusted R-squared:  0.7319 
+## F-statistic: 107.1 on 13 and 492 DF,  p-value: &lt; 2.2e-16</code></pre>
 <pre><code>## [1] &quot;SSE for model is: &quot;</code></pre>
-<pre><code>## [1] 11073.53</code></pre>
+<pre><code>## [1] 11155.78</code></pre>
 <pre><code>## [1] &quot;MSE for model is: &quot;</code></pre>
-<pre><code>## [1] 21.88445</code></pre>
+<pre><code>## [1] 22.047</code></pre>
 <p><strong>5% - 25 entries</strong></p>
 <p>Adjusted R-squared: 0.7313</p>
 <p>[1] “SSE for model is:” [1] 11182.17 [1] “MSE for model is:” [1] 22.09915</p>
@@ -941,34 +940,34 @@ Adjusted R-squared: <b>.7338</b>
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -15.4532  -2.7401  -0.5482   1.9717  26.1719 
+## -15.8762  -2.6750  -0.6538   1.7534  26.4546 
 ## 
 ## Coefficients:
 ##               Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)  37.790275   5.119381   7.382 6.71e-13 ***
-## CRIM         -0.104961   0.032720  -3.208 0.001424 ** 
-## ZN            0.046243   0.013628   3.393 0.000746 ***
-## INDUS         0.023763   0.061252   0.388 0.698216    
-## CHAS          2.756206   0.856877   3.217 0.001383 ** 
-## NOX         -18.332839   3.812896  -4.808 2.03e-06 ***
-## RM            3.770357   0.416600   9.050  &lt; 2e-16 ***
-## AGE           0.002551   0.013172   0.194 0.846508    
-## DIS          -1.462357   0.198710  -7.359 7.82e-13 ***
-## RAD           0.311218   0.066107   4.708 3.26e-06 ***
-## TAX          -0.012544   0.003742  -3.352 0.000863 ***
-## PTRATIO      -1.005386   0.132373  -7.595 1.56e-13 ***
-## B             0.009479   0.002675   3.543 0.000433 ***
-## LSTAT        -0.527873   0.050480 -10.457  &lt; 2e-16 ***
+## (Intercept)  3.384e+01  5.130e+00   6.596 1.09e-10 ***
+## CRIM        -1.079e-01  3.321e-02  -3.248 0.001243 ** 
+## ZN           5.026e-02  1.384e-02   3.630 0.000313 ***
+## INDUS       -9.871e-04  6.188e-02  -0.016 0.987280    
+## CHAS         2.745e+00  8.708e-01   3.152 0.001719 ** 
+## NOX         -1.633e+01  3.836e+00  -4.256 2.49e-05 ***
+## RM           3.905e+00  4.213e-01   9.268  &lt; 2e-16 ***
+## AGE          1.887e-04  1.335e-02   0.014 0.988731    
+## DIS         -1.507e+00  2.013e-01  -7.485 3.32e-13 ***
+## RAD          2.882e-01  6.682e-02   4.313 1.94e-05 ***
+## TAX         -1.238e-02  3.802e-03  -3.255 0.001212 ** 
+## PTRATIO     -8.556e-01  1.326e-01  -6.454 2.61e-10 ***
+## B            9.215e-03  2.714e-03   3.395 0.000742 ***
+## LSTAT       -5.251e-01  5.126e-02 -10.244  &lt; 2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 4.725 on 492 degrees of freedom
-## Multiple R-squared:  0.7428, Adjusted R-squared:  0.736 
-## F-statistic: 109.3 on 13 and 492 DF,  p-value: &lt; 2.2e-16</code></pre>
+## Residual standard error: 4.796 on 492 degrees of freedom
+## Multiple R-squared:  0.7351, Adjusted R-squared:  0.7281 
+## F-statistic:   105 on 13 and 492 DF,  p-value: &lt; 2.2e-16</code></pre>
 <pre><code>## [1] &quot;SSE for model is: &quot;</code></pre>
-<pre><code>## [1] 10985.05</code></pre>
+<pre><code>## [1] 11315.06</code></pre>
 <pre><code>## [1] &quot;MSE for model is: &quot;</code></pre>
-<pre><code>## [1] 21.70959</code></pre>
+<pre><code>## [1] 22.36178</code></pre>
 <p><strong>10% - 51 entries</strong></p>
 <p>Adjusted R-squared: 0.7345 [1] “SSE for model is:” [1] 11049.58 [1] “MSE for model is:” [1] 21.83712</p>
 <pre><code>## 
@@ -977,34 +976,34 @@ Adjusted R-squared: <b>.7338</b>
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -15.8018  -2.6948  -0.6544   1.7013  26.5606 
+## -15.3288  -2.7283  -0.5455   1.9613  25.1597 
 ## 
 ## Coefficients:
 ##               Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)  34.537863   5.163137   6.689 6.11e-11 ***
-## CRIM         -0.104277   0.033167  -3.144 0.001767 ** 
-## ZN            0.050572   0.013797   3.666 0.000274 ***
-## INDUS         0.018493   0.062141   0.298 0.766139    
-## CHAS          2.785776   0.869069   3.205 0.001436 ** 
-## NOX         -16.432653   3.831620  -4.289 2.16e-05 ***
-## RM            3.893166   0.420956   9.248  &lt; 2e-16 ***
-## AGE          -0.003427   0.013303  -0.258 0.796844    
-## DIS          -1.515102   0.200987  -7.538 2.31e-13 ***
-## RAD           0.303847   0.067155   4.525 7.60e-06 ***
-## TAX          -0.013270   0.003789  -3.502 0.000503 ***
-## PTRATIO      -0.888311   0.135588  -6.552 1.44e-10 ***
-## B             0.009734   0.002715   3.586 0.000370 ***
-## LSTAT        -0.523503   0.051214 -10.222  &lt; 2e-16 ***
+## (Intercept)  38.482790   5.219666   7.373 7.14e-13 ***
+## CRIM         -0.106873   0.032787  -3.260 0.001193 ** 
+## ZN            0.045654   0.013701   3.332 0.000927 ***
+## INDUS         0.026066   0.061432   0.424 0.671536    
+## CHAS          2.719286   0.859066   3.165 0.001645 ** 
+## NOX         -17.850848   3.806251  -4.690 3.55e-06 ***
+## RM            3.734333   0.418457   8.924  &lt; 2e-16 ***
+## AGE           0.001127   0.013183   0.086 0.931888    
+## DIS          -1.498876   0.198701  -7.543 2.23e-13 ***
+## RAD           0.304931   0.066119   4.612 5.10e-06 ***
+## TAX          -0.012890   0.003747  -3.440 0.000630 ***
+## PTRATIO      -1.006280   0.135029  -7.452 4.16e-13 ***
+## B             0.008814   0.002678   3.291 0.001070 ** 
+## LSTAT        -0.532088   0.050563 -10.523  &lt; 2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 4.79 on 492 degrees of freedom
-## Multiple R-squared:  0.7357, Adjusted R-squared:  0.7288 
-## F-statistic: 105.4 on 13 and 492 DF,  p-value: &lt; 2.2e-16</code></pre>
+## Residual standard error: 4.734 on 492 degrees of freedom
+## Multiple R-squared:  0.7418, Adjusted R-squared:  0.735 
+## F-statistic: 108.7 on 13 and 492 DF,  p-value: &lt; 2.2e-16</code></pre>
 <pre><code>## [1] &quot;SSE for model is: &quot;</code></pre>
-<pre><code>## [1] 11288.23</code></pre>
+<pre><code>## [1] 11028.16</code></pre>
 <pre><code>## [1] &quot;MSE for model is: &quot;</code></pre>
-<pre><code>## [1] 22.30875</code></pre>
+<pre><code>## [1] 21.79478</code></pre>
 <p><strong>20% - 102 entries</strong></p>
 <p>Adjusted R-squared: 0.7231 [1] “SSE for model is:” [1] 11523.58 [1] “MSE for model is:” [1] 22.77388</p>
 <pre><code>## 
@@ -1012,35 +1011,35 @@ Adjusted R-squared: <b>.7338</b>
 ## lm(formula = MEDV ~ ., data = boston_mcar_20.df)
 ## 
 ## Residuals:
-##      Min       1Q   Median       3Q      Max 
-## -16.2503  -2.7186  -0.7271   1.9170  26.9824 
+##     Min      1Q  Median      3Q     Max 
+## -16.192  -2.710  -0.583   1.783  26.656 
 ## 
 ## Coefficients:
 ##               Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)  3.059e+01  5.209e+00   5.871 7.96e-09 ***
-## CRIM        -1.076e-01  3.365e-02  -3.199 0.001470 ** 
-## ZN           5.913e-02  1.380e-02   4.283 2.22e-05 ***
-## INDUS       -1.436e-02  6.259e-02  -0.229 0.818640    
-## CHAS         2.701e+00  8.849e-01   3.052 0.002395 ** 
-## NOX         -1.439e+01  3.851e+00  -3.735 0.000210 ***
-## RM           4.110e+00  4.239e-01   9.696  &lt; 2e-16 ***
-## AGE         -4.283e-04  1.354e-02  -0.032 0.974774    
-## DIS         -1.572e+00  2.035e-01  -7.726 6.26e-14 ***
-## RAD          2.724e-01  6.759e-02   4.030 6.46e-05 ***
-## TAX         -1.356e-02  3.843e-03  -3.529 0.000457 ***
-## PTRATIO     -7.445e-01  1.409e-01  -5.284 1.91e-07 ***
-## B            8.618e-03  2.749e-03   3.135 0.001819 ** 
-## LSTAT       -5.203e-01  5.203e-02 -10.001  &lt; 2e-16 ***
+## (Intercept)  31.740495   5.199534   6.104 2.09e-09 ***
+## CRIM         -0.103895   0.033515  -3.100 0.002046 ** 
+## ZN            0.056591   0.013814   4.097 4.90e-05 ***
+## INDUS         0.001151   0.062571   0.018 0.985328    
+## CHAS          2.790031   0.879136   3.174 0.001600 ** 
+## NOX         -14.895896   3.843791  -3.875 0.000121 ***
+## RM            3.987276   0.424344   9.396  &lt; 2e-16 ***
+## AGE          -0.003230   0.013448  -0.240 0.810304    
+## DIS          -1.513634   0.203290  -7.446 4.35e-13 ***
+## RAD           0.271574   0.067211   4.041 6.19e-05 ***
+## TAX          -0.012507   0.003839  -3.258 0.001201 ** 
+## PTRATIO      -0.791877   0.140249  -5.646 2.78e-08 ***
+## B             0.009452   0.002742   3.447 0.000615 ***
+## LSTAT        -0.529920   0.051717 -10.247  &lt; 2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 4.859 on 492 degrees of freedom
-## Multiple R-squared:  0.7281, Adjusted R-squared:  0.7209 
-## F-statistic: 101.4 on 13 and 492 DF,  p-value: &lt; 2.2e-16</code></pre>
+## Residual standard error: 4.84 on 492 degrees of freedom
+## Multiple R-squared:  0.7302, Adjusted R-squared:  0.723 
+## F-statistic: 102.4 on 13 and 492 DF,  p-value: &lt; 2.2e-16</code></pre>
 <pre><code>## [1] &quot;SSE for model is: &quot;</code></pre>
-<pre><code>## [1] 11614.03</code></pre>
+<pre><code>## [1] 11526.16</code></pre>
 <pre><code>## [1] &quot;MSE for model is: &quot;</code></pre>
-<pre><code>## [1] 22.95263</code></pre>
+<pre><code>## [1] 22.77898</code></pre>
 <p><strong>33% - 168 entries</strong></p>
 <p>Adjusted R-squared: 0.7205 [1] “SSE for model is:” [1] 11632.02 [1] “MSE for model is:” [1] 22.98819</p>
 <pre><code>## 
@@ -1049,34 +1048,34 @@ Adjusted R-squared: <b>.7338</b>
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -15.8701  -2.7298  -0.7981   1.9684  27.3842 
+## -17.3358  -2.9253  -0.8136   1.8613  26.9448 
 ## 
 ## Coefficients:
 ##               Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)  34.820535   5.040920   6.908 1.53e-11 ***
-## CRIM         -0.097416   0.032976  -2.954 0.003285 ** 
-## ZN            0.050663   0.013635   3.716 0.000226 ***
-## INDUS         0.010692   0.061560   0.174 0.862184    
-## CHAS          2.961058   0.861777   3.436 0.000640 ***
-## NOX         -14.565534   3.716379  -3.919 0.000101 ***
-## RM            4.014627   0.415858   9.654  &lt; 2e-16 ***
-## AGE          -0.006214   0.013213  -0.470 0.638342    
-## DIS          -1.436287   0.200787  -7.153 3.09e-12 ***
-## RAD           0.265733   0.065767   4.041 6.19e-05 ***
-## TAX          -0.012505   0.003772  -3.315 0.000983 ***
-## PTRATIO      -0.992854   0.141184  -7.032 6.83e-12 ***
-## B             0.009481   0.002696   3.517 0.000477 ***
-## LSTAT        -0.521958   0.050906 -10.253  &lt; 2e-16 ***
+## (Intercept)  30.156380   5.290798   5.700 2.07e-08 ***
+## CRIM         -0.107457   0.033762  -3.183 0.001551 ** 
+## ZN            0.064993   0.013637   4.766 2.48e-06 ***
+## INDUS        -0.025765   0.062677  -0.411 0.681193    
+## CHAS          2.807614   0.886114   3.168 0.001628 ** 
+## NOX         -13.311603   3.824329  -3.481 0.000544 ***
+## RM            4.024110   0.427300   9.418  &lt; 2e-16 ***
+## AGE          -0.002230   0.013559  -0.164 0.869457    
+## DIS          -1.578567   0.204083  -7.735 5.90e-14 ***
+## RAD           0.253134   0.067368   3.757 0.000192 ***
+## TAX          -0.012892   0.003864  -3.337 0.000912 ***
+## PTRATIO      -0.722742   0.145770  -4.958 9.81e-07 ***
+## B             0.009149   0.002759   3.316 0.000982 ***
+## LSTAT        -0.523862   0.052161 -10.043  &lt; 2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 4.761 on 492 degrees of freedom
-## Multiple R-squared:  0.7389, Adjusted R-squared:  0.732 
-## F-statistic: 107.1 on 13 and 492 DF,  p-value: &lt; 2.2e-16</code></pre>
+## Residual standard error: 4.874 on 492 degrees of freedom
+## Multiple R-squared:  0.7264, Adjusted R-squared:  0.7191 
+## F-statistic: 100.5 on 13 and 492 DF,  p-value: &lt; 2.2e-16</code></pre>
 <pre><code>## [1] &quot;SSE for model is: &quot;</code></pre>
-<pre><code>## [1] 11152.06</code></pre>
+<pre><code>## [1] 11688.98</code></pre>
 <pre><code>## [1] &quot;MSE for model is: &quot;</code></pre>
-<pre><code>## [1] 22.03964</code></pre>
+<pre><code>## [1] 23.10074</code></pre>
 <p><strong>50% - 253 entries</strong></p>
 <p>Adjusted R-squared: 0.7142 [1] “SSE for model is:” [1] 11894.22 [1] “MSE for model is:” [1] 23.50637</p>
 <pre><code>## 
@@ -1085,37 +1084,39 @@ Adjusted R-squared: <b>.7338</b>
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -17.6521  -2.8494  -0.8679   1.8212  27.3700 
+## -17.3968  -2.9371  -0.7763   1.8929  26.1041 
 ## 
 ## Coefficients:
 ##               Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)  27.621957   5.476276   5.044 6.43e-07 ***
-## CRIM         -0.107789   0.034090  -3.162 0.001664 ** 
-## ZN            0.067078   0.013793   4.863 1.56e-06 ***
-## INDUS        -0.031510   0.063240  -0.498 0.618525    
-## CHAS          3.069716   0.890951   3.445 0.000619 ***
-## NOX         -11.708726   3.824376  -3.062 0.002322 ** 
-## RM            4.107233   0.430515   9.540  &lt; 2e-16 ***
-## AGE          -0.004308   0.013670  -0.315 0.752773    
-## DIS          -1.558637   0.206344  -7.554 2.08e-13 ***
-## RAD           0.256948   0.068423   3.755 0.000194 ***
-## TAX          -0.013984   0.003889  -3.595 0.000357 ***
-## PTRATIO      -0.645600   0.166669  -3.874 0.000122 ***
-## B             0.009234   0.002787   3.313 0.000992 ***
-## LSTAT        -0.518546   0.052863  -9.809  &lt; 2e-16 ***
+## (Intercept)  29.398190   5.476171   5.368 1.23e-07 ***
+## CRIM         -0.110825   0.033982  -3.261 0.001186 ** 
+## ZN            0.063456   0.013855   4.580 5.89e-06 ***
+## INDUS        -0.010540   0.063277  -0.167 0.867778    
+## CHAS          3.118433   0.886613   3.517 0.000476 ***
+## NOX         -12.574319   3.834472  -3.279 0.001114 ** 
+## RM            4.007840   0.431160   9.295  &lt; 2e-16 ***
+## AGE          -0.004325   0.013613  -0.318 0.750850    
+## DIS          -1.526997   0.205998  -7.413 5.44e-13 ***
+## RAD           0.234032   0.067431   3.471 0.000565 ***
+## TAX          -0.013060   0.003885  -3.362 0.000835 ***
+## PTRATIO      -0.693944   0.159166  -4.360 1.59e-05 ***
+## B             0.008782   0.002773   3.167 0.001634 ** 
+## LSTAT        -0.525764   0.052447 -10.025  &lt; 2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 4.92 on 492 degrees of freedom
-## Multiple R-squared:  0.7212, Adjusted R-squared:  0.7138 
-## F-statistic: 97.89 on 13 and 492 DF,  p-value: &lt; 2.2e-16</code></pre>
+## Residual standard error: 4.901 on 492 degrees of freedom
+## Multiple R-squared:  0.7234, Adjusted R-squared:  0.7161 
+## F-statistic: 98.97 on 13 and 492 DF,  p-value: &lt; 2.2e-16</code></pre>
 <pre><code>## [1] &quot;SSE for model is: &quot;</code></pre>
-<pre><code>## [1] 11909.81</code></pre>
+<pre><code>## [1] 11816.48</code></pre>
 <pre><code>## [1] &quot;MSE for model is: &quot;</code></pre>
-<pre><code>## [1] 23.53717</code></pre>
+<pre><code>## [1] 23.35274</code></pre>
+<p>Overall our adjusted R-square value fell as we increased the amount of missing data and filled with a global mean. In contrast our sum of square increased as we filled more missing data with a global mean.</p>
 </div>
 <div id="listwise-deletion-at-1-mcar-and-50-mcar" class="section level2">
 <h2>Listwise Deletion at 1% MCAR and 50% MCAR</h2>
+<p>The listewise approach will remove the 1% and 50% missing data and model thereafter using our lm function.</p>
 <pre class="r"><code>lwd1 &lt;- lm( MEDV ~ . , data = boston_mcar_01.df, na.action = na.omit  )
 
 # model results for goodness of fit using adj r-sqr
@@ -1126,32 +1127,32 @@ summary(lwd1)</code></pre>
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -15.5715  -2.7512  -0.5059   1.7711  26.1940 
+## -15.8057  -2.7430  -0.5208   1.8096  26.3074 
 ## 
 ## Coefficients:
 ##               Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)  3.691e+01  5.135e+00   7.187 2.47e-12 ***
-## CRIM        -1.079e-01  3.286e-02  -3.283 0.001099 ** 
-## ZN           4.522e-02  1.377e-02   3.283 0.001099 ** 
-## INDUS        2.533e-02  6.157e-02   0.411 0.680918    
-## CHAS         2.667e+00  8.616e-01   3.095 0.002081 ** 
-## NOX         -1.782e+01  3.820e+00  -4.665 3.98e-06 ***
-## RM           3.807e+00  4.179e-01   9.111  &lt; 2e-16 ***
-## AGE          5.222e-04  1.320e-02   0.040 0.968469    
-## DIS         -1.468e+00  1.995e-01  -7.358 7.86e-13 ***
-## RAD          3.137e-01  6.653e-02   4.715 3.15e-06 ***
-## TAX         -1.273e-02  3.756e-03  -3.388 0.000759 ***
-## PTRATIO     -9.700e-01  1.329e-01  -7.300 1.16e-12 ***
-## B            9.196e-03  2.685e-03   3.425 0.000666 ***
-## LSTAT       -5.258e-01  5.070e-02 -10.372  &lt; 2e-16 ***
+## (Intercept)  3.509e+01  5.067e+00   6.925 1.37e-11 ***
+## CRIM        -1.072e-01  3.298e-02  -3.252 0.001224 ** 
+## ZN           4.779e-02  1.376e-02   3.473 0.000560 ***
+## INDUS        1.677e-02  6.167e-02   0.272 0.785793    
+## CHAS         2.668e+00  8.651e-01   3.084 0.002159 ** 
+## NOX         -1.709e+01  3.816e+00  -4.478 9.37e-06 ***
+## RM           3.886e+00  4.181e-01   9.295  &lt; 2e-16 ***
+## AGE          8.995e-04  1.326e-02   0.068 0.945944    
+## DIS         -1.481e+00  2.001e-01  -7.402 5.87e-13 ***
+## RAD          3.018e-01  6.654e-02   4.535 7.25e-06 ***
+## TAX         -1.255e-02  3.772e-03  -3.326 0.000947 ***
+## PTRATIO     -9.173e-01  1.307e-01  -7.019 7.43e-12 ***
+## B            9.415e-03  2.696e-03   3.492 0.000522 ***
+## LSTAT       -5.255e-01  5.089e-02 -10.326  &lt; 2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 4.744 on 492 degrees of freedom
-## Multiple R-squared:  0.7408, Adjusted R-squared:  0.7339 
-## F-statistic: 108.1 on 13 and 492 DF,  p-value: &lt; 2.2e-16</code></pre>
-<pre><code>## [1] &quot;SSE for model is:  11073.5310998851&quot;</code></pre>
-<pre><code>## [1] &quot;MSE for model is: 21.8844488140022&quot;</code></pre>
+## Residual standard error: 4.762 on 492 degrees of freedom
+## Multiple R-squared:  0.7388, Adjusted R-squared:  0.7319 
+## F-statistic: 107.1 on 13 and 492 DF,  p-value: &lt; 2.2e-16</code></pre>
+<pre><code>## [1] &quot;SSE for model is:  11155.7833306094&quot;</code></pre>
+<pre><code>## [1] &quot;MSE for model is: 22.0470026296628&quot;</code></pre>
 <pre class="r"><code>lwd50 &lt;- lm( MEDV ~ . , data = boston_mcar_50.df, na.action = na.omit  )
 
 # model results for goodness of fit using adj r-sqr
@@ -1162,32 +1163,32 @@ summary(lwd50)</code></pre>
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -17.6521  -2.8494  -0.8679   1.8212  27.3700 
+## -17.3968  -2.9371  -0.7763   1.8929  26.1041 
 ## 
 ## Coefficients:
 ##               Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)  27.621957   5.476276   5.044 6.43e-07 ***
-## CRIM         -0.107789   0.034090  -3.162 0.001664 ** 
-## ZN            0.067078   0.013793   4.863 1.56e-06 ***
-## INDUS        -0.031510   0.063240  -0.498 0.618525    
-## CHAS          3.069716   0.890951   3.445 0.000619 ***
-## NOX         -11.708726   3.824376  -3.062 0.002322 ** 
-## RM            4.107233   0.430515   9.540  &lt; 2e-16 ***
-## AGE          -0.004308   0.013670  -0.315 0.752773    
-## DIS          -1.558637   0.206344  -7.554 2.08e-13 ***
-## RAD           0.256948   0.068423   3.755 0.000194 ***
-## TAX          -0.013984   0.003889  -3.595 0.000357 ***
-## PTRATIO      -0.645600   0.166669  -3.874 0.000122 ***
-## B             0.009234   0.002787   3.313 0.000992 ***
-## LSTAT        -0.518546   0.052863  -9.809  &lt; 2e-16 ***
+## (Intercept)  29.398190   5.476171   5.368 1.23e-07 ***
+## CRIM         -0.110825   0.033982  -3.261 0.001186 ** 
+## ZN            0.063456   0.013855   4.580 5.89e-06 ***
+## INDUS        -0.010540   0.063277  -0.167 0.867778    
+## CHAS          3.118433   0.886613   3.517 0.000476 ***
+## NOX         -12.574319   3.834472  -3.279 0.001114 ** 
+## RM            4.007840   0.431160   9.295  &lt; 2e-16 ***
+## AGE          -0.004325   0.013613  -0.318 0.750850    
+## DIS          -1.526997   0.205998  -7.413 5.44e-13 ***
+## RAD           0.234032   0.067431   3.471 0.000565 ***
+## TAX          -0.013060   0.003885  -3.362 0.000835 ***
+## PTRATIO      -0.693944   0.159166  -4.360 1.59e-05 ***
+## B             0.008782   0.002773   3.167 0.001634 ** 
+## LSTAT        -0.525764   0.052447 -10.025  &lt; 2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 4.92 on 492 degrees of freedom
-## Multiple R-squared:  0.7212, Adjusted R-squared:  0.7138 
-## F-statistic: 97.89 on 13 and 492 DF,  p-value: &lt; 2.2e-16</code></pre>
-<pre><code>## [1] &quot;SSE for model is: 11909.8069016505&quot;</code></pre>
-<pre><code>## [1] &quot;MSE for model is: 23.537167789823&quot;</code></pre>
+## Residual standard error: 4.901 on 492 degrees of freedom
+## Multiple R-squared:  0.7234, Adjusted R-squared:  0.7161 
+## F-statistic: 98.97 on 13 and 492 DF,  p-value: &lt; 2.2e-16</code></pre>
+<pre><code>## [1] &quot;SSE for model is: 11816.4849845115&quot;</code></pre>
+<pre><code>## [1] &quot;MSE for model is: 23.3527371235405&quot;</code></pre>
 </div>
 <div id="multiple-imputation-with-mice" class="section level2">
 <h2>Multiple Imputation with Mice</h2>
@@ -1231,6 +1232,7 @@ imp_33 &lt;- mice(boston_mcar_33.df,  m = 5)</code></pre>
 ## &lt;0 rows&gt; (or 0-length row.names)</code></pre>
 <p>We incorporate all 5 imputation possibilities back into our data and transform it into a long dataframe. Each of these imputed values represent a sample from a distribution.</p>
 <pre class="r"><code>boston.lm50_long &lt;- complete(imp_50, action=&quot;long&quot;, include = TRUE)</code></pre>
+<p>We can see there are 5 new datasets with their respective imputed data sets, 0 acting as our original data set.</p>
 <pre class="r"><code>table(boston.lm50_long$.imp)</code></pre>
 <pre><code>## 
 ##   0   1   2   3   4   5 
@@ -1240,40 +1242,43 @@ imp_33 &lt;- mice(boston_mcar_33.df,  m = 5)</code></pre>
 <p>We run our linear model using this object which runs all 5 different iterations of our data set. Using the pool function from Mice we take the average of every model.</p>
 <pre class="r"><code>fitimp50 &lt;- with(imp_long_mids50,
                lm(MEDV ~   CRIM + ZN + INDUS + CHAS + NOX + RM + AGE + DIS + RAD + TAX + PTRATIO + B + LSTAT))</code></pre>
+<p>Multiple imputation results with 50% missing data.</p>
 <pre class="r"><code>summary(pool(fitimp50))</code></pre>
-<pre><code>##           term      estimate   std.error  statistic       df      p.value
-## 1  (Intercept)  27.621956969 5.476275943  5.0439308 489.9625 6.434285e-07
-## 2         CRIM  -0.107788779 0.034090280 -3.1618625 489.9625 1.664805e-03
-## 3           ZN   0.067077564 0.013792837  4.8632172 489.9625 1.558584e-06
-## 4        INDUS  -0.031509681 0.063239752 -0.4982575 489.9625 6.185261e-01
-## 5         CHAS   3.069715921 0.890950771  3.4454383 489.9625 6.191248e-04
-## 6          NOX -11.708726119 3.824375861 -3.0616044 489.9625 2.322478e-03
-## 7           RM   4.107232539 0.430515165  9.5402738 489.9625 0.000000e+00
-## 8          AGE  -0.004308203 0.013669835 -0.3151613 489.9625 7.527733e-01
-## 9          DIS  -1.558636772 0.206344456 -7.5535675 489.9625 2.091660e-13
-## 10         RAD   0.256947793 0.068423031  3.7552822 489.9625 1.939441e-04
-## 11         TAX  -0.013983873 0.003889401 -3.5953797 489.9625 3.567358e-04
-## 12     PTRATIO  -0.645599832 0.166668527 -3.8735558 489.9625 1.218241e-04
-## 13           B   0.009233591 0.002787312  3.3127228 489.9625 9.922410e-04
-## 14       LSTAT  -0.518546085 0.052862812 -9.8092793 489.9625 0.000000e+00</code></pre>
+<pre><code>##           term      estimate   std.error   statistic       df      p.value
+## 1  (Intercept)  29.398190371 5.476170875   5.3683844 489.9625 1.228689e-07
+## 2         CRIM  -0.110825273 0.033981559  -3.2613358 489.9625 1.186151e-03
+## 3           ZN   0.063455712 0.013854531   4.5801413 489.9625 5.900656e-06
+## 4        INDUS  -0.010540062 0.063277487  -0.1665689 489.9625 8.677780e-01
+## 5         CHAS   3.118433443 0.886613008   3.5172431 489.9625 4.766246e-04
+## 6          NOX -12.574319325 3.834471830  -3.2792833 489.9625 1.114751e-03
+## 7           RM   4.007840322 0.431160089   9.2954808 489.9625 0.000000e+00
+## 8          AGE  -0.004324760 0.013612856  -0.3176967 489.9625 7.508503e-01
+## 9          DIS  -1.526996664 0.205998457  -7.4126607 489.9625 5.475620e-13
+## 10         RAD   0.234032059 0.067430770   3.4707013 489.9625 5.649784e-04
+## 11         TAX  -0.013059880 0.003884847  -3.3617489 489.9625 8.350724e-04
+## 12     PTRATIO  -0.693944346 0.159165925  -4.3598801 489.9625 1.586923e-05
+## 13           B   0.008781542 0.002772538   3.1673293 489.9625 1.634443e-03
+## 14       LSTAT  -0.525763627 0.052447351 -10.0245984 489.9625 0.000000e+00</code></pre>
 <pre class="r"><code>pool.r.squared(fitimp50, adjusted=TRUE)</code></pre>
 <pre><code>##               est     lo 95     hi 95 fmi
-## adj R^2 0.7138212 0.6690419 0.7536227 NaN</code></pre>
+## adj R^2 0.7160636 0.6715532 0.7556059 NaN</code></pre>
+<p>Results for other missing data sets.</p>
 <pre class="r"><code>pool.r.squared(fitimp01, adjusted=TRUE)</code></pre>
-<pre><code>##              est     lo 95     hi 95 fmi
-## adj R^2 0.733916 0.6915958 0.7713614 NaN</code></pre>
+<pre><code>##               est     lo 95     hi 95 fmi
+## adj R^2 0.7319395 0.6893726 0.7696199 NaN</code></pre>
 <pre class="r"><code>pool.r.squared(fitimp05, adjusted=TRUE)</code></pre>
-<pre><code>##              est     lo 95     hi 95 fmi
-## adj R^2 0.736042 0.6939885 0.7732338 NaN</code></pre>
+<pre><code>##               est     lo 95     hi 95 fmi
+## adj R^2 0.7281123 0.6850705 0.7662458 NaN</code></pre>
 <pre class="r"><code>pool.r.squared(fitimp10, adjusted=TRUE)</code></pre>
 <pre><code>##               est     lo 95     hi 95 fmi
-## adj R^2 0.7287571 0.6857951 0.7668144 NaN</code></pre>
+## adj R^2 0.7350062 0.6928226 0.7723216 NaN</code></pre>
 <pre class="r"><code>pool.r.squared(fitimp20, adjusted=TRUE)</code></pre>
 <pre><code>##               est     lo 95     hi 95 fmi
-## adj R^2 0.7209284 0.6770062 0.7599051 NaN</code></pre>
+## adj R^2 0.7230397 0.6793748 0.7617695 NaN</code></pre>
 <pre class="r"><code>pool.r.squared(fitimp33, adjusted=TRUE)</code></pre>
-<pre><code>##              est     lo 95     hi 95 fmi
-## adj R^2 0.732029 0.6894733 0.7696988 NaN</code></pre>
+<pre><code>##               est     lo 95     hi 95 fmi
+## adj R^2 0.7191275 0.6749868 0.7583141 NaN</code></pre>
+<p>Interestingly our adjusted r-squared value remain pretty constant when filling out missing data from a distribution pool from our multiple imputation method.</p>
 </div>
 <div id="results" class="section level2">
 <h2>Results</h2>
@@ -1283,7 +1288,7 @@ imp_33 &lt;- mice(boston_mcar_33.df,  m = 5)</code></pre>
 <div id="missing-at-random-with-regression-single-imputation-multiple-imputation" class="section level1">
 <h1>Missing at Random with Regression: Single Imputation &amp; Multiple Imputation</h1>
 <p><strong>Determining Parameter for Deletion</strong> <br> AGE &lt; 80 = 266 entries</p>
-<p><strong>Values to be Deleted</strong> <br> * CRIM - per capita crime rate by town <br> * RAD - index of accessibility to radial highways</p>
+<p><strong>Values to be Deleted</strong> <br> CRIM - per capita crime rate by town <br> RAD - index of accessibility to radial highways</p>
 <pre class="r"><code># list rows with AGE &lt; 80 
 boston.df[boston.df$AGE &lt; 80,c(&quot;CRIM&quot;,&quot;RAD&quot;)]
 
@@ -1341,406 +1346,38 @@ boston_mar_30.df[index_mar_30, c(&quot;CRIM&quot;,&quot;RAD&quot;)] &lt;- NA</co
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -15.8281  -2.7574  -0.5252   1.9607  26.3464 
+## -15.8052  -2.7753  -0.5228   1.9017  26.0403 
 ## 
 ## Coefficients:
 ##               Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)  34.258897   5.037073   6.801 3.02e-11 ***
-## CRIM         -0.110684   0.033051  -3.349 0.000874 ***
-## ZN            0.044373   0.013767   3.223 0.001353 ** 
-## INDUS         0.003501   0.061420   0.057 0.954573    
-## CHAS          2.708102   0.867490   3.122 0.001903 ** 
-## NOX         -17.177391   3.829472  -4.486 9.06e-06 ***
-## RM            3.892478   0.418409   9.303  &lt; 2e-16 ***
-## AGE           0.001903   0.013354   0.142 0.886745    
-## DIS          -1.458845   0.200747  -7.267 1.45e-12 ***
-## RAD           0.241858   0.061041   3.962 8.52e-05 ***
-## TAX          -0.008720   0.003434  -2.540 0.011403 *  
-## PTRATIO      -0.922884   0.130845  -7.053 5.96e-12 ***
-## B             0.009260   0.002701   3.428 0.000658 ***
-## LSTAT        -0.524984   0.051019 -10.290  &lt; 2e-16 ***
+## (Intercept)  3.642e+01  5.075e+00   7.176 2.66e-12 ***
+## CRIM        -1.099e-01  3.280e-02  -3.351 0.000867 ***
+## ZN           4.521e-02  1.368e-02   3.305 0.001019 ** 
+## INDUS        2.619e-02  6.152e-02   0.426 0.670447    
+## CHAS         2.693e+00  8.598e-01   3.132 0.001840 ** 
+## NOX         -1.840e+01  3.833e+00  -4.802 2.09e-06 ***
+## RM           3.843e+00  4.158e-01   9.244  &lt; 2e-16 ***
+## AGE          9.154e-04  1.319e-02   0.069 0.944716    
+## DIS         -1.509e+00  1.988e-01  -7.592 1.59e-13 ***
+## RAD          2.968e-01  6.104e-02   4.862 1.57e-06 ***
+## TAX         -1.129e-02  3.436e-03  -3.286 0.001087 ** 
+## PTRATIO     -9.559e-01  1.305e-01  -7.323 9.96e-13 ***
+## B            9.236e-03  2.675e-03   3.452 0.000603 ***
+## LSTAT       -5.282e-01  5.067e-02 -10.423  &lt; 2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 4.769 on 492 degrees of freedom
-## Multiple R-squared:  0.738,  Adjusted R-squared:  0.7311 
-## F-statistic: 106.6 on 13 and 492 DF,  p-value: &lt; 2.2e-16</code></pre>
+## Residual standard error: 4.738 on 492 degrees of freedom
+## Multiple R-squared:  0.7414, Adjusted R-squared:  0.7346 
+## F-statistic: 108.5 on 13 and 492 DF,  p-value: &lt; 2.2e-16</code></pre>
 <pre><code>## [1] &quot;SSE for model is: &quot;</code></pre>
-<pre><code>## [1] 11192.07</code></pre>
+<pre><code>## [1] 11046.88</code></pre>
 <pre><code>## [1] &quot;MSE for model is: &quot;</code></pre>
-<pre><code>## [1] 22.11872</code></pre>
+<pre><code>## [1] 21.83179</code></pre>
 <div id="mar-20" class="section level3">
 <h3>MAR 20%</h3>
 <p>When AGE &lt; 80, 20% of the entries for CRIM and RAD will be replaced with the NA value</p>
 <p><strong>Validation</strong></p>
-<pre><code>##     CRIM RAD  AGE
-## 2     NA  NA 78.9
-## 4     NA  NA 45.8
-## 5     NA  NA 54.2
-## 6     NA  NA 58.7
-## 37    NA  NA 61.4
-## 39    NA  NA 30.2
-## 40    NA  NA 21.8
-## 41    NA  NA 15.8
-## 50    NA  NA 62.0
-## 54    NA  NA 21.4
-## 55    NA  NA 47.6
-## 57    NA  NA 35.7
-## 61    NA  NA 66.2
-## 63    NA  NA 67.8
-## 68    NA  NA 21.4
-## 71    NA  NA  6.6
-## 75    NA  NA  6.0
-## 76    NA  NA 45.0
-## 78    NA  NA 45.8
-## 79    NA  NA 53.7
-## 88    NA  NA 56.8
-## 91    NA  NA 66.1
-## 94    NA  NA 28.9
-## 95    NA  NA 77.3
-## 99    NA  NA 36.9
-## 100   NA  NA 62.5
-## 102   NA  NA 71.3
-## 119   NA  NA 73.1
-## 120   NA  NA 65.2
-## 121   NA  NA 69.7
-## 186   NA  NA 68.8
-## 189   NA  NA 29.1
-## 192   NA  NA 30.8
-## 194   NA  NA  9.9
-## 196   NA  NA 32.0
-## 198   NA  NA 36.6
-## 199   NA  NA 38.3
-## 200   NA  NA 15.3
-## 202   NA  NA 38.4
-## 204   NA  NA 33.2
-## 207   NA  NA 52.5
-## 208   NA  NA 72.7
-## 213   NA  NA 53.8
-## 216   NA  NA 42.4
-## 223   NA  NA 77.7
-## 225   NA  NA 78.3
-## 231   NA  NA 68.1
-## 234   NA  NA 70.4
-## 236   NA  NA 61.5
-## 239   NA  NA 18.5
-## 240   NA  NA 42.2
-## 241   NA  NA 54.3
-## 243   NA  NA 52.9
-## 246   NA  NA 70.2
-## 252   NA  NA  8.9
-## 255   NA  NA 32.0
-## 256   NA  NA 19.1
-## 266   NA  NA 62.8
-## 268   NA  NA 67.0
-## 270   NA  NA 61.5
-## 276   NA  NA 42.8
-## 279   NA  NA 32.1
-## 281   NA  NA 64.5
-## 282   NA  NA 37.2
-## 283   NA  NA 49.7
-## 288   NA  NA 31.3
-## 289   NA  NA 45.6
-## 290   NA  NA 22.9
-## 291   NA  NA 27.9
-## 292   NA  NA 27.7
-## 293   NA  NA 23.4
-## 294   NA  NA 18.4
-## 295   NA  NA 42.3
-## 297   NA  NA 51.0
-## 301   NA  NA 47.4
-## 303   NA  NA 18.4
-## 316   NA  NA 77.7
-## 326   NA  NA 14.7
-## 328   NA  NA 43.7
-## 331   NA  NA 32.2
-## 334   NA  NA 38.1
-## 337   NA  NA 46.3
-## 340   NA  NA 45.4
-## 342   NA  NA 49.3
-## 346   NA  NA 48.5
-## 349   NA  NA 29.7
-## 351   NA  NA 44.4
-## 354   NA  NA 36.1
-## 465   NA  NA 65.4
-## 466   NA  NA 48.2
-## 469   NA  NA 71.0
-## 470   NA  NA 56.7
-## 473   NA  NA 75.0
-## 484   NA  NA 40.3
-## 486   NA  NA 51.9
-## 495   NA  NA 42.6
-## 498   NA  NA 70.6
-## 500   NA  NA 73.5
-## 502   NA  NA 69.1
-## 503   NA  NA 76.7</code></pre>
-<pre><code>##         CRIM RAD  AGE
-## 1    0.00632   1 65.2
-## 2         NA  NA 78.9
-## 3    0.02729   2 61.1
-## 4         NA  NA 45.8
-## 5         NA  NA 54.2
-## 6         NA  NA 58.7
-## 7    0.08829   5 66.6
-## 13   0.09378   5 39.0
-## 14   0.62976   4 61.8
-## 16   0.62739   4 56.5
-## 17   1.05393   4 29.3
-## 19   0.80271   4 36.6
-## 20   0.72580   4 69.5
-## 36   0.06417   5 68.2
-## 37        NA  NA 61.4
-## 38   0.08014   5 41.5
-## 39        NA  NA 30.2
-## 40        NA  NA 21.8
-## 41        NA  NA 15.8
-## 42   0.12744   3  2.9
-## 43   0.14150   3  6.6
-## 44   0.15936   3  6.5
-## 45   0.12269   3 40.0
-## 46   0.17142   3 33.8
-## 47   0.18836   3 33.3
-## 50        NA  NA 62.0
-## 51   0.08873   4 45.7
-## 52   0.04337   4 63.0
-## 53   0.05360   4 21.1
-## 54        NA  NA 21.4
-## 55        NA  NA 47.6
-## 56   0.01311   5 21.9
-## 57        NA  NA 35.7
-## 58   0.01432   5 40.5
-## 59   0.15445   8 29.2
-## 60   0.10328   8 47.2
-## 61        NA  NA 66.2
-## 63        NA  NA 67.8
-## 64   0.12650   8 43.4
-## 65   0.01951   3 59.5
-## 66   0.03584   4 17.8
-## 67   0.04379   4 31.1
-## 68        NA  NA 21.4
-## 69   0.13554   4 36.8
-## 70   0.12816   4 33.0
-## 71        NA  NA  6.6
-## 72   0.15876   4 17.5
-## 73   0.09164   4  7.8
-## 74   0.19539   4  6.2
-## 75        NA  NA  6.0
-## 76        NA  NA 45.0
-## 77   0.10153   5 74.5
-## 78        NA  NA 45.8
-## 79        NA  NA 53.7
-## 80   0.08387   5 36.6
-## 81   0.04113   4 33.5
-## 82   0.04462   4 70.4
-## 83   0.03659   4 32.2
-## 84   0.03551   4 46.7
-## 85   0.05059   3 48.0
-## 86   0.05735   3 56.1
-## 87   0.05188   3 45.1
-## 88        NA  NA 56.8
-## 90   0.05302   2 63.1
-## 91        NA  NA 66.1
-## 92   0.03932   2 73.9
-## 93   0.04203   4 53.6
-## 94        NA  NA 28.9
-## 95        NA  NA 77.3
-## 96   0.12204   2 57.8
-## 97   0.11504   2 69.6
-## 98   0.12083   2 76.0
-## 99        NA  NA 36.9
-## 100       NA  NA 62.5
-## 101  0.14866   5 79.9
-## 102       NA  NA 71.3
-## 111  0.10793   5 54.4
-## 117  0.13158   6 72.5
-## 119       NA  NA 73.1
-## 120       NA  NA 65.2
-## 121       NA  NA 69.7
-## 168  1.80028   5 79.2
-## 175  0.08447   5 68.7
-## 176  0.06664   5 33.1
-## 177  0.07022   5 47.2
-## 178  0.05425   5 73.4
-## 179  0.06642   5 74.4
-## 180  0.05780   3 58.4
-## 182  0.06888   3 62.2
-## 186       NA  NA 68.8
-## 187  0.05602   3 53.6
-## 188  0.07875   5 41.1
-## 189       NA  NA 29.1
-## 190  0.08370   5 38.9
-## 191  0.09068   5 21.5
-## 192       NA  NA 30.8
-## 193  0.08664   5 26.3
-## 194       NA  NA  9.9
-## 195  0.01439   1 18.8
-## 196       NA  NA 32.0
-## 197  0.04011   2 34.1
-## 198       NA  NA 36.6
-## 199       NA  NA 38.3
-## 200       NA  NA 15.3
-## 201  0.01778   3 13.9
-## 202       NA  NA 38.4
-## 203  0.02177   2 15.7
-## 204       NA  NA 33.2
-## 205  0.02009   4 31.9
-## 206  0.13642   4 22.3
-## 207       NA  NA 52.5
-## 208       NA  NA 72.7
-## 209  0.13587   4 59.1
-## 213       NA  NA 53.8
-## 214  0.14052   4 32.3
-## 215  0.28955   4  9.8
-## 216       NA  NA 42.4
-## 217  0.04560   5 56.0
-## 223       NA  NA 77.7
-## 225       NA  NA 78.3
-## 228  0.41238   8 79.9
-## 229  0.29819   8 17.0
-## 230  0.44178   8 21.4
-## 231       NA  NA 68.1
-## 232  0.46296   8 76.9
-## 233  0.57529   8 73.3
-## 234       NA  NA 70.4
-## 235  0.44791   8 66.5
-## 236       NA  NA 61.5
-## 237  0.52058   8 76.5
-## 238  0.51183   8 71.6
-## 239       NA  NA 18.5
-## 240       NA  NA 42.2
-## 241       NA  NA 54.3
-## 242  0.10612   6 65.1
-## 243       NA  NA 52.9
-## 244  0.12757   6  7.8
-## 245  0.20608   7 76.5
-## 246       NA  NA 70.2
-## 247  0.33983   7 34.9
-## 248  0.19657   7 79.2
-## 249  0.16439   7 49.1
-## 250  0.19073   7 17.5
-## 251  0.14030   7 13.0
-## 252       NA  NA  8.9
-## 253  0.08221   7  6.8
-## 254  0.36894   7  8.4
-## 255       NA  NA 32.0
-## 256       NA  NA 19.1
-## 257  0.01538   3 34.2
-## 266       NA  NA 62.8
-## 268       NA  NA 67.0
-## 269  0.54050   5 52.6
-## 270       NA  NA 61.5
-## 271  0.29916   3 42.1
-## 272  0.16211   3 16.3
-## 273  0.11460   3 58.7
-## 274  0.22188   3 51.8
-## 275  0.05644   4 32.9
-## 276       NA  NA 42.8
-## 277  0.10469   4 49.0
-## 278  0.06127   4 27.6
-## 279       NA  NA 32.1
-## 280  0.21038   5 32.2
-## 281       NA  NA 64.5
-## 282       NA  NA 37.2
-## 283       NA  NA 49.7
-## 284  0.01501   1 24.8
-## 285  0.00906   1 20.8
-## 286  0.01096   1 31.9
-## 287  0.01965   1 31.5
-## 288       NA  NA 31.3
-## 289       NA  NA 45.6
-## 290       NA  NA 22.9
-## 291       NA  NA 27.9
-## 292       NA  NA 27.7
-## 293       NA  NA 23.4
-## 294       NA  NA 18.4
-## 295       NA  NA 42.3
-## 296  0.12932   4 31.1
-## 297       NA  NA 51.0
-## 298  0.14103   4 58.0
-## 299  0.06466   5 20.1
-## 300  0.05561   5 10.0
-## 301       NA  NA 47.4
-## 302  0.03537   7 40.4
-## 303       NA  NA 18.4
-## 304  0.10000   7 17.7
-## 305  0.05515   7 41.1
-## 306  0.05479   7 58.1
-## 307  0.07503   7 71.9
-## 308  0.04932   7 70.3
-## 310  0.34940   4 76.7
-## 311  2.63548   4 37.8
-## 312  0.79041   4 52.8
-## 316       NA  NA 77.7
-## 318  0.24522   4 71.7
-## 319  0.40202   4 67.2
-## 320  0.47547   4 58.8
-## 321  0.16760   5 52.3
-## 322  0.18159   5 54.3
-## 323  0.35114   5 49.9
-## 324  0.28392   5 74.3
-## 325  0.34109   5 40.1
-## 326       NA  NA 14.7
-## 327  0.30347   5 28.9
-## 328       NA  NA 43.7
-## 329  0.06617   4 25.8
-## 330  0.06724   4 17.2
-## 331       NA  NA 32.2
-## 332  0.05023   1 28.4
-## 333  0.03466   1 23.3
-## 334       NA  NA 38.1
-## 335  0.03738   5 38.5
-## 336  0.03961   5 34.5
-## 337       NA  NA 46.3
-## 338  0.03041   5 59.6
-## 339  0.03306   5 37.3
-## 340       NA  NA 45.4
-## 341  0.06151   5 58.5
-## 342       NA  NA 49.3
-## 343  0.02498   1 59.7
-## 344  0.02543   5 56.4
-## 345  0.03049   5 28.1
-## 346       NA  NA 48.5
-## 347  0.06162   3 52.3
-## 348  0.01870   4 27.7
-## 349       NA  NA 29.7
-## 350  0.02899   1 34.5
-## 351       NA  NA 44.4
-## 352  0.07950   4 35.9
-## 353  0.07244   4 18.5
-## 354       NA  NA 36.1
-## 355  0.04301   4 21.9
-## 356  0.10659   4 19.5
-## 400  9.91655  24 77.8
-## 420 11.81230  24 76.5
-## 425  8.79212  24 70.6
-## 427 12.24720  24 59.7
-## 428 37.66190  24 78.7
-## 429  7.36711  24 78.1
-## 433  6.44405  24 74.8
-## 465       NA  NA 65.4
-## 466       NA  NA 48.2
-## 469       NA  NA 71.0
-## 470       NA  NA 56.7
-## 473       NA  NA 75.0
-## 474  4.64689  24 67.6
-## 481  5.82401  24 64.7
-## 482  5.70818  24 74.9
-## 483  5.73116  24 77.0
-## 484       NA  NA 40.3
-## 485  2.37857  24 41.9
-## 486       NA  NA 51.9
-## 487  5.69175  24 79.8
-## 488  4.83567  24 53.2
-## 494  0.17331   6 54.0
-## 495       NA  NA 42.6
-## 496  0.17899   6 28.8
-## 497  0.28960   6 72.9
-## 498       NA  NA 70.6
-## 499  0.23912   6 65.3
-## 500       NA  NA 73.5
-## 501  0.22438   6 79.7
-## 502       NA  NA 69.1
-## 503       NA  NA 76.7</code></pre>
 <p><strong>Regression Using Mean Substitution</strong></p>
 <p>Adjusted R-squared: 0.7292 [1] “SSE for model is:” [1] 11267.98 [1] “MSE for model is:” [1] 22.26873</p>
 <pre><code>## 
@@ -1749,457 +1386,39 @@ boston_mar_30.df[index_mar_30, c(&quot;CRIM&quot;,&quot;RAD&quot;)] &lt;- NA</co
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -15.9830  -2.8362  -0.5473   1.8804  26.6169 
+## -16.0630  -2.8439  -0.6075   1.8619  26.6834 
 ## 
 ## Coefficients:
 ##               Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)  33.377879   5.028141   6.638 8.41e-11 ***
-## CRIM         -0.108002   0.033319  -3.241 0.001270 ** 
-## ZN            0.040310   0.013787   2.924 0.003617 ** 
-## INDUS        -0.007774   0.061265  -0.127 0.899074    
-## CHAS          2.849836   0.867323   3.286 0.001090 ** 
-## NOX         -16.756806   3.836286  -4.368 1.53e-05 ***
-## RM            3.941238   0.419098   9.404  &lt; 2e-16 ***
-## AGE          -0.001632   0.013322  -0.123 0.902526    
-## DIS          -1.476876   0.201228  -7.339 8.94e-13 ***
-## RAD           0.196661   0.056195   3.500 0.000508 ***
-## TAX          -0.006324   0.003159  -2.002 0.045838 *  
-## PTRATIO      -0.914427   0.131306  -6.964 1.06e-11 ***
-## B             0.009175   0.002711   3.384 0.000771 ***
-## LSTAT        -0.518465   0.051067 -10.153  &lt; 2e-16 ***
+## (Intercept)  3.322e+01  5.035e+00   6.598 1.08e-10 ***
+## CRIM        -1.085e-01  3.388e-02  -3.203 0.001449 ** 
+## ZN           4.366e-02  1.383e-02   3.156 0.001700 ** 
+## INDUS       -8.658e-03  6.154e-02  -0.141 0.888175    
+## CHAS         2.855e+00  8.684e-01   3.287 0.001084 ** 
+## NOX         -1.702e+01  3.852e+00  -4.418 1.23e-05 ***
+## RM           3.988e+00  4.181e-01   9.539  &lt; 2e-16 ***
+## AGE         -7.737e-04  1.337e-02  -0.058 0.953890    
+## DIS         -1.495e+00  2.014e-01  -7.424 5.04e-13 ***
+## RAD          1.886e-01  5.588e-02   3.375 0.000797 ***
+## TAX         -5.864e-03  3.116e-03  -1.882 0.060478 .  
+## PTRATIO     -9.174e-01  1.319e-01  -6.957 1.11e-11 ***
+## B            8.952e-03  2.695e-03   3.321 0.000963 ***
+## LSTAT       -5.158e-01  5.118e-02 -10.077  &lt; 2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 4.787 on 492 degrees of freedom
-## Multiple R-squared:  0.736,  Adjusted R-squared:  0.7291 
-## F-statistic: 105.5 on 13 and 492 DF,  p-value: &lt; 2.2e-16</code></pre>
+## Residual standard error: 4.792 on 492 degrees of freedom
+## Multiple R-squared:  0.7355, Adjusted R-squared:  0.7286 
+## F-statistic: 105.3 on 13 and 492 DF,  p-value: &lt; 2.2e-16</code></pre>
 <pre><code>## [1] &quot;SSE for model is: &quot;</code></pre>
-<pre><code>## [1] 11275.7</code></pre>
+<pre><code>## [1] 11296.73</code></pre>
 <pre><code>## [1] &quot;MSE for model is: &quot;</code></pre>
-<pre><code>## [1] 22.284</code></pre>
+<pre><code>## [1] 22.32555</code></pre>
 </div>
 <div id="mar-30" class="section level3">
 <h3>MAR 30%</h3>
 <p>When AGE &lt; 80, 30% of the entries for CRIM and RAD will be replaced with the NA value</p>
 <p><strong>Validation</strong></p>
-<pre><code>##     CRIM RAD  AGE
-## 1     NA  NA 65.2
-## 7     NA  NA 66.6
-## 13    NA  NA 39.0
-## 17    NA  NA 29.3
-## 19    NA  NA 36.6
-## 20    NA  NA 69.5
-## 36    NA  NA 68.2
-## 37    NA  NA 61.4
-## 38    NA  NA 41.5
-## 39    NA  NA 30.2
-## 40    NA  NA 21.8
-## 41    NA  NA 15.8
-## 44    NA  NA  6.5
-## 46    NA  NA 33.8
-## 50    NA  NA 62.0
-## 51    NA  NA 45.7
-## 52    NA  NA 63.0
-## 53    NA  NA 21.1
-## 54    NA  NA 21.4
-## 55    NA  NA 47.6
-## 56    NA  NA 21.9
-## 58    NA  NA 40.5
-## 60    NA  NA 47.2
-## 61    NA  NA 66.2
-## 63    NA  NA 67.8
-## 64    NA  NA 43.4
-## 66    NA  NA 17.8
-## 70    NA  NA 33.0
-## 72    NA  NA 17.5
-## 77    NA  NA 74.5
-## 78    NA  NA 45.8
-## 80    NA  NA 36.6
-## 82    NA  NA 70.4
-## 84    NA  NA 46.7
-## 90    NA  NA 63.1
-## 92    NA  NA 73.9
-## 93    NA  NA 53.6
-## 98    NA  NA 76.0
-## 99    NA  NA 36.9
-## 101   NA  NA 79.9
-## 102   NA  NA 71.3
-## 111   NA  NA 54.4
-## 117   NA  NA 72.5
-## 119   NA  NA 73.1
-## 121   NA  NA 69.7
-## 168   NA  NA 79.2
-## 177   NA  NA 47.2
-## 178   NA  NA 73.4
-## 179   NA  NA 74.4
-## 180   NA  NA 58.4
-## 186   NA  NA 68.8
-## 187   NA  NA 53.6
-## 188   NA  NA 41.1
-## 191   NA  NA 21.5
-## 192   NA  NA 30.8
-## 193   NA  NA 26.3
-## 194   NA  NA  9.9
-## 196   NA  NA 32.0
-## 200   NA  NA 15.3
-## 201   NA  NA 13.9
-## 202   NA  NA 38.4
-## 203   NA  NA 15.7
-## 205   NA  NA 31.9
-## 206   NA  NA 22.3
-## 208   NA  NA 72.7
-## 213   NA  NA 53.8
-## 214   NA  NA 32.3
-## 215   NA  NA  9.8
-## 217   NA  NA 56.0
-## 223   NA  NA 77.7
-## 228   NA  NA 79.9
-## 230   NA  NA 21.4
-## 231   NA  NA 68.1
-## 233   NA  NA 73.3
-## 237   NA  NA 76.5
-## 238   NA  NA 71.6
-## 239   NA  NA 18.5
-## 240   NA  NA 42.2
-## 241   NA  NA 54.3
-## 244   NA  NA  7.8
-## 248   NA  NA 79.2
-## 250   NA  NA 17.5
-## 251   NA  NA 13.0
-## 252   NA  NA  8.9
-## 253   NA  NA  6.8
-## 254   NA  NA  8.4
-## 255   NA  NA 32.0
-## 256   NA  NA 19.1
-## 257   NA  NA 34.2
-## 269   NA  NA 52.6
-## 275   NA  NA 32.9
-## 278   NA  NA 27.6
-## 279   NA  NA 32.1
-## 280   NA  NA 32.2
-## 281   NA  NA 64.5
-## 284   NA  NA 24.8
-## 285   NA  NA 20.8
-## 288   NA  NA 31.3
-## 289   NA  NA 45.6
-## 290   NA  NA 22.9
-## 291   NA  NA 27.9
-## 292   NA  NA 27.7
-## 295   NA  NA 42.3
-## 296   NA  NA 31.1
-## 298   NA  NA 58.0
-## 299   NA  NA 20.1
-## 300   NA  NA 10.0
-## 301   NA  NA 47.4
-## 302   NA  NA 40.4
-## 303   NA  NA 18.4
-## 307   NA  NA 71.9
-## 308   NA  NA 70.3
-## 311   NA  NA 37.8
-## 316   NA  NA 77.7
-## 321   NA  NA 52.3
-## 322   NA  NA 54.3
-## 324   NA  NA 74.3
-## 326   NA  NA 14.7
-## 327   NA  NA 28.9
-## 329   NA  NA 25.8
-## 330   NA  NA 17.2
-## 331   NA  NA 32.2
-## 332   NA  NA 28.4
-## 333   NA  NA 23.3
-## 337   NA  NA 46.3
-## 338   NA  NA 59.6
-## 339   NA  NA 37.3
-## 341   NA  NA 58.5
-## 342   NA  NA 49.3
-## 345   NA  NA 28.1
-## 349   NA  NA 29.7
-## 350   NA  NA 34.5
-## 352   NA  NA 35.9
-## 353   NA  NA 18.5
-## 354   NA  NA 36.1
-## 400   NA  NA 77.8
-## 429   NA  NA 78.1
-## 433   NA  NA 74.8
-## 469   NA  NA 71.0
-## 474   NA  NA 67.6
-## 481   NA  NA 64.7
-## 486   NA  NA 51.9
-## 488   NA  NA 53.2
-## 495   NA  NA 42.6
-## 497   NA  NA 72.9
-## 498   NA  NA 70.6
-## 499   NA  NA 65.3
-## 501   NA  NA 79.7
-## 502   NA  NA 69.1
-## 503   NA  NA 76.7</code></pre>
-<pre><code>##         CRIM RAD  AGE
-## 1         NA  NA 65.2
-## 2    0.02731   2 78.9
-## 3    0.02729   2 61.1
-## 4    0.03237   3 45.8
-## 5    0.06905   3 54.2
-## 6    0.02985   3 58.7
-## 7         NA  NA 66.6
-## 13        NA  NA 39.0
-## 14   0.62976   4 61.8
-## 16   0.62739   4 56.5
-## 17        NA  NA 29.3
-## 19        NA  NA 36.6
-## 20        NA  NA 69.5
-## 36        NA  NA 68.2
-## 37        NA  NA 61.4
-## 38        NA  NA 41.5
-## 39        NA  NA 30.2
-## 40        NA  NA 21.8
-## 41        NA  NA 15.8
-## 42   0.12744   3  2.9
-## 43   0.14150   3  6.6
-## 44        NA  NA  6.5
-## 45   0.12269   3 40.0
-## 46        NA  NA 33.8
-## 47   0.18836   3 33.3
-## 50        NA  NA 62.0
-## 51        NA  NA 45.7
-## 52        NA  NA 63.0
-## 53        NA  NA 21.1
-## 54        NA  NA 21.4
-## 55        NA  NA 47.6
-## 56        NA  NA 21.9
-## 57   0.02055   2 35.7
-## 58        NA  NA 40.5
-## 59   0.15445   8 29.2
-## 60        NA  NA 47.2
-## 61        NA  NA 66.2
-## 63        NA  NA 67.8
-## 64        NA  NA 43.4
-## 65   0.01951   3 59.5
-## 66        NA  NA 17.8
-## 67   0.04379   4 31.1
-## 68   0.05789   4 21.4
-## 69   0.13554   4 36.8
-## 70        NA  NA 33.0
-## 71   0.08826   4  6.6
-## 72        NA  NA 17.5
-## 73   0.09164   4  7.8
-## 74   0.19539   4  6.2
-## 75   0.07896   5  6.0
-## 76   0.09512   5 45.0
-## 77        NA  NA 74.5
-## 78        NA  NA 45.8
-## 79   0.05646   5 53.7
-## 80        NA  NA 36.6
-## 81   0.04113   4 33.5
-## 82        NA  NA 70.4
-## 83   0.03659   4 32.2
-## 84        NA  NA 46.7
-## 85   0.05059   3 48.0
-## 86   0.05735   3 56.1
-## 87   0.05188   3 45.1
-## 88   0.07151   3 56.8
-## 90        NA  NA 63.1
-## 91   0.04684   2 66.1
-## 92        NA  NA 73.9
-## 93        NA  NA 53.6
-## 94   0.02875   4 28.9
-## 95   0.04294   4 77.3
-## 96   0.12204   2 57.8
-## 97   0.11504   2 69.6
-## 98        NA  NA 76.0
-## 99        NA  NA 36.9
-## 100  0.06860   2 62.5
-## 101       NA  NA 79.9
-## 102       NA  NA 71.3
-## 111       NA  NA 54.4
-## 117       NA  NA 72.5
-## 119       NA  NA 73.1
-## 120  0.14476   6 65.2
-## 121       NA  NA 69.7
-## 168       NA  NA 79.2
-## 175  0.08447   5 68.7
-## 176  0.06664   5 33.1
-## 177       NA  NA 47.2
-## 178       NA  NA 73.4
-## 179       NA  NA 74.4
-## 180       NA  NA 58.4
-## 182  0.06888   3 62.2
-## 186       NA  NA 68.8
-## 187       NA  NA 53.6
-## 188       NA  NA 41.1
-## 189  0.12579   5 29.1
-## 190  0.08370   5 38.9
-## 191       NA  NA 21.5
-## 192       NA  NA 30.8
-## 193       NA  NA 26.3
-## 194       NA  NA  9.9
-## 195  0.01439   1 18.8
-## 196       NA  NA 32.0
-## 197  0.04011   2 34.1
-## 198  0.04666   2 36.6
-## 199  0.03768   2 38.3
-## 200       NA  NA 15.3
-## 201       NA  NA 13.9
-## 202       NA  NA 38.4
-## 203       NA  NA 15.7
-## 204  0.03510   4 33.2
-## 205       NA  NA 31.9
-## 206       NA  NA 22.3
-## 207  0.22969   4 52.5
-## 208       NA  NA 72.7
-## 209  0.13587   4 59.1
-## 213       NA  NA 53.8
-## 214       NA  NA 32.3
-## 215       NA  NA  9.8
-## 216  0.19802   4 42.4
-## 217       NA  NA 56.0
-## 223       NA  NA 77.7
-## 225  0.31533   8 78.3
-## 228       NA  NA 79.9
-## 229  0.29819   8 17.0
-## 230       NA  NA 21.4
-## 231       NA  NA 68.1
-## 232  0.46296   8 76.9
-## 233       NA  NA 73.3
-## 234  0.33147   8 70.4
-## 235  0.44791   8 66.5
-## 236  0.33045   8 61.5
-## 237       NA  NA 76.5
-## 238       NA  NA 71.6
-## 239       NA  NA 18.5
-## 240       NA  NA 42.2
-## 241       NA  NA 54.3
-## 242  0.10612   6 65.1
-## 243  0.10290   6 52.9
-## 244       NA  NA  7.8
-## 245  0.20608   7 76.5
-## 246  0.19133   7 70.2
-## 247  0.33983   7 34.9
-## 248       NA  NA 79.2
-## 249  0.16439   7 49.1
-## 250       NA  NA 17.5
-## 251       NA  NA 13.0
-## 252       NA  NA  8.9
-## 253       NA  NA  6.8
-## 254       NA  NA  8.4
-## 255       NA  NA 32.0
-## 256       NA  NA 19.1
-## 257       NA  NA 34.2
-## 266  0.76162   5 62.8
-## 268  0.57834   5 67.0
-## 269       NA  NA 52.6
-## 270  0.09065   3 61.5
-## 271  0.29916   3 42.1
-## 272  0.16211   3 16.3
-## 273  0.11460   3 58.7
-## 274  0.22188   3 51.8
-## 275       NA  NA 32.9
-## 276  0.09604   4 42.8
-## 277  0.10469   4 49.0
-## 278       NA  NA 27.6
-## 279       NA  NA 32.1
-## 280       NA  NA 32.2
-## 281       NA  NA 64.5
-## 282  0.03705   5 37.2
-## 283  0.06129   5 49.7
-## 284       NA  NA 24.8
-## 285       NA  NA 20.8
-## 286  0.01096   1 31.9
-## 287  0.01965   1 31.5
-## 288       NA  NA 31.3
-## 289       NA  NA 45.6
-## 290       NA  NA 22.9
-## 291       NA  NA 27.9
-## 292       NA  NA 27.7
-## 293  0.03615   4 23.4
-## 294  0.08265   4 18.4
-## 295       NA  NA 42.3
-## 296       NA  NA 31.1
-## 297  0.05372   4 51.0
-## 298       NA  NA 58.0
-## 299       NA  NA 20.1
-## 300       NA  NA 10.0
-## 301       NA  NA 47.4
-## 302       NA  NA 40.4
-## 303       NA  NA 18.4
-## 304  0.10000   7 17.7
-## 305  0.05515   7 41.1
-## 306  0.05479   7 58.1
-## 307       NA  NA 71.9
-## 308       NA  NA 70.3
-## 310  0.34940   4 76.7
-## 311       NA  NA 37.8
-## 312  0.79041   4 52.8
-## 316       NA  NA 77.7
-## 318  0.24522   4 71.7
-## 319  0.40202   4 67.2
-## 320  0.47547   4 58.8
-## 321       NA  NA 52.3
-## 322       NA  NA 54.3
-## 323  0.35114   5 49.9
-## 324       NA  NA 74.3
-## 325  0.34109   5 40.1
-## 326       NA  NA 14.7
-## 327       NA  NA 28.9
-## 328  0.24103   5 43.7
-## 329       NA  NA 25.8
-## 330       NA  NA 17.2
-## 331       NA  NA 32.2
-## 332       NA  NA 28.4
-## 333       NA  NA 23.3
-## 334  0.05083   5 38.1
-## 335  0.03738   5 38.5
-## 336  0.03961   5 34.5
-## 337       NA  NA 46.3
-## 338       NA  NA 59.6
-## 339       NA  NA 37.3
-## 340  0.05497   5 45.4
-## 341       NA  NA 58.5
-## 342       NA  NA 49.3
-## 343  0.02498   1 59.7
-## 344  0.02543   5 56.4
-## 345       NA  NA 28.1
-## 346  0.03113   3 48.5
-## 347  0.06162   3 52.3
-## 348  0.01870   4 27.7
-## 349       NA  NA 29.7
-## 350       NA  NA 34.5
-## 351  0.06211   1 44.4
-## 352       NA  NA 35.9
-## 353       NA  NA 18.5
-## 354       NA  NA 36.1
-## 355  0.04301   4 21.9
-## 356  0.10659   4 19.5
-## 400       NA  NA 77.8
-## 420 11.81230  24 76.5
-## 425  8.79212  24 70.6
-## 427 12.24720  24 59.7
-## 428 37.66190  24 78.7
-## 429       NA  NA 78.1
-## 433       NA  NA 74.8
-## 465  7.83932  24 65.4
-## 466  3.16360  24 48.2
-## 469       NA  NA 71.0
-## 470 13.07510  24 56.7
-## 473  3.56868  24 75.0
-## 474       NA  NA 67.6
-## 481       NA  NA 64.7
-## 482  5.70818  24 74.9
-## 483  5.73116  24 77.0
-## 484  2.81838  24 40.3
-## 485  2.37857  24 41.9
-## 486       NA  NA 51.9
-## 487  5.69175  24 79.8
-## 488       NA  NA 53.2
-## 494  0.17331   6 54.0
-## 495       NA  NA 42.6
-## 496  0.17899   6 28.8
-## 497       NA  NA 72.9
-## 498       NA  NA 70.6
-## 499       NA  NA 65.3
-## 500  0.17783   6 73.5
-## 501       NA  NA 79.7
-## 502       NA  NA 69.1
-## 503       NA  NA 76.7</code></pre>
 <p><strong>Regression Using Mean Substitution</strong></p>
 <p>Adjusted R-squared: 0.7325 [1] “SSE for model is:” [1] 11133.25 [1] “MSE for model is:” [1] 22.00247</p>
 <pre><code>## 
@@ -2208,34 +1427,34 @@ boston_mar_30.df[index_mar_30, c(&quot;CRIM&quot;,&quot;RAD&quot;)] &lt;- NA</co
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -16.0389  -2.8885  -0.5473   1.8314  26.5662 
+## -16.0988  -2.8693  -0.5657   2.0093  26.4732 
 ## 
 ## Coefficients:
 ##               Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)  33.079805   4.975605   6.648 7.89e-11 ***
-## CRIM         -0.116710   0.033221  -3.513 0.000484 ***
-## ZN            0.039775   0.013742   2.894 0.003968 ** 
-## INDUS         0.001457   0.061526   0.024 0.981114    
-## CHAS          2.801146   0.864743   3.239 0.001279 ** 
-## NOX         -17.194731   3.831654  -4.488 8.98e-06 ***
-## RM            3.978190   0.416071   9.561  &lt; 2e-16 ***
-## AGE           0.003258   0.013479   0.242 0.809104    
-## DIS          -1.461854   0.200728  -7.283 1.31e-12 ***
-## RAD           0.216490   0.054807   3.950 8.96e-05 ***
-## TAX          -0.007039   0.003116  -2.259 0.024297 *  
-## PTRATIO      -0.917357   0.130637  -7.022 7.30e-12 ***
-## B             0.008797   0.002691   3.269 0.001155 ** 
-## LSTAT        -0.515533   0.050841 -10.140  &lt; 2e-16 ***
+## (Intercept)  3.335e+01  5.013e+00   6.654 7.62e-11 ***
+## CRIM        -1.065e-01  3.337e-02  -3.190 0.001511 ** 
+## ZN           4.091e-02  1.376e-02   2.973 0.003097 ** 
+## INDUS        6.896e-03  6.222e-02   0.111 0.911789    
+## CHAS         2.754e+00  8.691e-01   3.169 0.001624 ** 
+## NOX         -1.761e+01  3.866e+00  -4.555 6.62e-06 ***
+## RM           3.987e+00  4.172e-01   9.558  &lt; 2e-16 ***
+## AGE          3.991e-04  1.340e-02   0.030 0.976263    
+## DIS         -1.465e+00  2.011e-01  -7.287 1.27e-12 ***
+## RAD          2.044e-01  5.457e-02   3.746 0.000201 ***
+## TAX         -6.104e-03  2.969e-03  -2.056 0.040325 *  
+## PTRATIO     -9.324e-01  1.320e-01  -7.062 5.62e-12 ***
+## B            9.229e-03  2.702e-03   3.415 0.000690 ***
+## LSTAT       -5.196e-01  5.095e-02 -10.198  &lt; 2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 4.771 on 492 degrees of freedom
-## Multiple R-squared:  0.7379, Adjusted R-squared:  0.7309 
-## F-statistic: 106.5 on 13 and 492 DF,  p-value: &lt; 2.2e-16</code></pre>
+## Residual standard error: 4.784 on 492 degrees of freedom
+## Multiple R-squared:  0.7364, Adjusted R-squared:  0.7294 
+## F-statistic: 105.7 on 13 and 492 DF,  p-value: &lt; 2.2e-16</code></pre>
 <pre><code>## [1] &quot;SSE for model is: &quot;</code></pre>
-<pre><code>## [1] 11197.66</code></pre>
+<pre><code>## [1] 11260.35</code></pre>
 <pre><code>## [1] &quot;MSE for model is: &quot;</code></pre>
-<pre><code>## [1] 22.12976</code></pre>
+<pre><code>## [1] 22.25367</code></pre>
 </div>
 </div>
 <div id="multiple-imputation-with-mice-1" class="section level2">
@@ -2336,25 +1555,70 @@ fitimp20 &lt;- with(imp_long_mids20,
                lm(MEDV ~   CRIM + ZN + INDUS + CHAS + NOX + RM + AGE + DIS + RAD + TAX + PTRATIO + B + LSTAT))
 fitimp30 &lt;- with(imp_long_mids30,
                lm(MEDV ~   CRIM + ZN + INDUS + CHAS + NOX + RM + AGE + DIS + RAD + TAX + PTRATIO + B + LSTAT))</code></pre>
+<p>Results for 10% missing data modeled after multiple imputation applied.</p>
 <pre class="r"><code>summary(pool(fitimp10))</code></pre>
 <pre><code>##           term      estimate   std.error    statistic       df      p.value
-## 1  (Intercept)  34.258897105 5.037073217   6.80134984 489.9625 3.028600e-11
-## 2         CRIM  -0.110684297 0.033051360  -3.34885756 489.9625 8.739875e-04
-## 3           ZN   0.044372523 0.013767484   3.22299424 489.9625 1.353103e-03
-## 4        INDUS   0.003500604 0.061419771   0.05699474 489.9625 9.545726e-01
-## 5         CHAS   2.708102441 0.867489804   3.12176861 489.9625 1.903894e-03
-## 6          NOX -17.177391200 3.829471649  -4.48557733 489.9625 9.068636e-06
-## 7           RM   3.892477711 0.418409079   9.30304314 489.9625 0.000000e+00
-## 8          AGE   0.001902889 0.013353852   0.14249740 489.9625 8.867457e-01
-## 9          DIS  -1.458844577 0.200746718  -7.26709057 489.9625 1.458833e-12
-## 10         RAD   0.241858203 0.061040851   3.96223510 489.9625 8.528742e-05
-## 11         TAX  -0.008720325 0.003433660  -2.53965892 489.9625 1.140397e-02
-## 12     PTRATIO  -0.922884085 0.130845310  -7.05324545 489.9625 5.987655e-12
-## 13           B   0.009259980 0.002700992   3.42836253 489.9625 6.584261e-04
-## 14       LSTAT  -0.524984039 0.051019029 -10.28996532 489.9625 0.000000e+00</code></pre>
+## 1  (Intercept)  3.641790e+01 5.075186604   7.17567749 489.9625 2.678302e-12
+## 2         CRIM -1.099053e-01 0.032797974  -3.35097719 489.9625 8.674752e-04
+## 3           ZN  4.521094e-02 0.013679187   3.30508999 489.9625 1.019049e-03
+## 4        INDUS  2.619431e-02 0.061519342   0.42578983 489.9625 6.704480e-01
+## 5         CHAS  2.692905e+00 0.859819174   3.13194306 489.9625 1.840395e-03
+## 6          NOX -1.840492e+01 3.833097935  -4.80157881 489.9625 2.094582e-06
+## 7           RM  3.843096e+00 0.415756376   9.24362465 489.9625 0.000000e+00
+## 8          AGE  9.154361e-04 0.013194792   0.06937859 489.9625 9.447166e-01
+## 9          DIS -1.508949e+00 0.198750842  -7.59216318 489.9625 1.603162e-13
+## 10         RAD  2.967693e-01 0.061043243   4.86162394 489.9625 1.570600e-06
+## 11         TAX -1.129184e-02 0.003435883  -3.28644403 489.9625 1.087393e-03
+## 12     PTRATIO -9.559406e-01 0.130534941  -7.32325455 489.9625 1.001421e-12
+## 13           B  9.235677e-03 0.002675131   3.45242014 489.9625 6.036952e-04
+## 14       LSTAT -5.281502e-01 0.050671659 -10.42299081 489.9625 0.000000e+00</code></pre>
 <pre class="r"><code>pool.r.squared(fitimp10, adjusted=TRUE)</code></pre>
 <pre><code>##               est     lo 95     hi 95 fmi
-## adj R^2 0.7310676 0.6883921 0.7688514 NaN</code></pre>
+## adj R^2 0.7345562 0.6923163 0.7719254 NaN</code></pre>
+<p>Results for 20% missing data modeled after multiple imputation applied.</p>
+<pre class="r"><code>summary(pool(fitimp20))</code></pre>
+<pre><code>##           term      estimate   std.error    statistic       df      p.value
+## 1  (Intercept)  3.322393e+01 5.035132226   6.59842314 489.9625 1.080589e-10
+## 2         CRIM -1.085174e-01 0.033881998  -3.20280514 489.9625 1.449510e-03
+## 3           ZN  4.365506e-02 0.013834389   3.15554698 489.9625 1.700528e-03
+## 4        INDUS -8.658201e-03 0.061542428  -0.14068670 489.9625 8.881753e-01
+## 5         CHAS  2.854701e+00 0.868381021   3.28738317 489.9625 1.083851e-03
+## 6          NOX -1.701882e+01 3.852154603  -4.41800062 489.9625 1.227189e-05
+## 7           RM  3.988105e+00 0.418085080   9.53897985 489.9625 0.000000e+00
+## 8          AGE -7.736889e-04 0.013373689  -0.05785157 489.9625 9.538904e-01
+## 9          DIS -1.494935e+00 0.201364300  -7.42403177 489.9625 5.069278e-13
+## 10         RAD  1.885681e-01 0.055875111   3.37481331 489.9625 7.972843e-04
+## 11         TAX -5.863998e-03 0.003116460  -1.88162152 489.9625 6.048000e-02
+## 12     PTRATIO -9.174357e-01 0.131876382  -6.95678559 489.9625 1.119949e-11
+## 13           B  8.952007e-03 0.002695452   3.32115210 489.9625 9.633966e-04
+## 14       LSTAT -5.157509e-01 0.051182594 -10.07668624 489.9625 0.000000e+00</code></pre>
+<pre class="r"><code>pool.r.squared(fitimp20, adjusted=TRUE)</code></pre>
+<pre><code>##               est     lo 95     hi 95 fmi
+## adj R^2 0.7285528 0.6855655 0.7666342 NaN</code></pre>
+<p>Results for 30% missing data modeled after multiple imputation applied.</p>
+<pre class="r"><code>summary(pool(fitimp30))</code></pre>
+<pre><code>##           term      estimate   std.error    statistic       df      p.value
+## 1  (Intercept)  3.335422e+01 5.012698165   6.65394611 489.9625 7.652989e-11
+## 2         CRIM -1.064794e-01 0.033374242  -3.19046759 489.9625 1.511511e-03
+## 3           ZN  4.091208e-02 0.013762920   2.97263081 489.9625 3.097930e-03
+## 4        INDUS  6.896138e-03 0.062217750   0.11083876 489.9625 9.117896e-01
+## 5         CHAS  2.754123e+00 0.869050241   3.16911824 489.9625 1.624619e-03
+## 6          NOX -1.761119e+01 3.866472438  -4.55484757 489.9625 6.624348e-06
+## 7           RM  3.987379e+00 0.417183599   9.55785176 489.9625 0.000000e+00
+## 8          AGE  3.990515e-04 0.013404499   0.02976996 489.9625 9.762626e-01
+## 9          DIS -1.465127e+00 0.201072160  -7.28657534 489.9625 1.280531e-12
+## 10         RAD  2.044205e-01 0.054569241   3.74607502 489.9625 2.009912e-04
+## 11         TAX -6.104295e-03 0.002969247  -2.05583955 489.9625 4.032727e-02
+## 12     PTRATIO -9.324407e-01 0.132031915  -7.06223703 489.9625 5.646150e-12
+## 13           B  9.228841e-03 0.002702178   3.41533401 489.9625 6.899642e-04
+## 14       LSTAT -5.195927e-01 0.050950171 -10.19805594 489.9625 0.000000e+00</code></pre>
+<pre class="r"><code>pool.r.squared(fitimp30, adjusted=TRUE)</code></pre>
+<pre><code>##               est     lo 95    hi 95 fmi
+## adj R^2 0.7294268 0.6865477 0.767405 NaN</code></pre>
+</div>
+<div id="results-1" class="section level2">
+<h2>Results</h2>
+<p>There were no significant differences with our adjusted r-square values between imputation methods, either single or multiple. However that doesnt mean the imputation didn’t do its job well as it closely matched our adjusted r-squared value of 73.38 for our full data set modeled with a linear regression model.</p>
 </div>
 </div>
 <div id="missing-not-at-random-with-regression-single-imputation-multiple-imputation" class="section level1">
@@ -2364,266 +1628,8 @@ fitimp30 &lt;- with(imp_long_mids30,
 <ul>
 <li>TAX &lt;= 279 [128 values 25.3%]</li>
 </ul>
-<pre><code>##        CRIM    ZN INDUS CHAS    NOX    RM   AGE     DIS RAD TAX PTRATIO      B
-## 2   0.02731   0.0  7.07    0 0.4690 6.421  78.9  4.9671   2 242    17.8 396.90
-## 3   0.02729   0.0  7.07    0 0.4690 7.185  61.1  4.9671   2 242    17.8 392.83
-## 4   0.03237   0.0  2.18    0 0.4580 6.998  45.8  6.0622   3 222    18.7 394.63
-## 5   0.06905   0.0  2.18    0 0.4580 7.147  54.2  6.0622   3 222    18.7 396.90
-## 6   0.02985   0.0  2.18    0 0.4580 6.430  58.7  6.0622   3 222    18.7 394.12
-## 36  0.06417   0.0  5.96    0 0.4990 5.933  68.2  3.3603   5 279    19.2 396.90
-## 37  0.09744   0.0  5.96    0 0.4990 5.841  61.4  3.3779   5 279    19.2 377.56
-## 38  0.08014   0.0  5.96    0 0.4990 5.850  41.5  3.9342   5 279    19.2 396.90
-## 39  0.17505   0.0  5.96    0 0.4990 5.966  30.2  3.8473   5 279    19.2 393.43
-## 40  0.02763  75.0  2.95    0 0.4280 6.595  21.8  5.4011   3 252    18.3 395.63
-## 41  0.03359  75.0  2.95    0 0.4280 7.024  15.8  5.4011   3 252    18.3 395.62
-## 42  0.12744   0.0  6.91    0 0.4480 6.770   2.9  5.7209   3 233    17.9 385.41
-## 43  0.14150   0.0  6.91    0 0.4480 6.169   6.6  5.7209   3 233    17.9 383.37
-## 44  0.15936   0.0  6.91    0 0.4480 6.211   6.5  5.7209   3 233    17.9 394.46
-## 45  0.12269   0.0  6.91    0 0.4480 6.069  40.0  5.7209   3 233    17.9 389.39
-## 46  0.17142   0.0  6.91    0 0.4480 5.682  33.8  5.1004   3 233    17.9 396.90
-## 47  0.18836   0.0  6.91    0 0.4480 5.786  33.3  5.1004   3 233    17.9 396.90
-## 48  0.22927   0.0  6.91    0 0.4480 6.030  85.5  5.6894   3 233    17.9 392.74
-## 49  0.25387   0.0  6.91    0 0.4480 5.399  95.3  5.8700   3 233    17.9 396.90
-## 50  0.21977   0.0  6.91    0 0.4480 5.602  62.0  6.0877   3 233    17.9 396.90
-## 51  0.08873  21.0  5.64    0 0.4390 5.963  45.7  6.8147   4 243    16.8 395.56
-## 52  0.04337  21.0  5.64    0 0.4390 6.115  63.0  6.8147   4 243    16.8 393.97
-## 53  0.05360  21.0  5.64    0 0.4390 6.511  21.1  6.8147   4 243    16.8 396.90
-## 54  0.04981  21.0  5.64    0 0.4390 5.998  21.4  6.8147   4 243    16.8 396.90
-## 56  0.01311  90.0  1.22    0 0.4030 7.249  21.9  8.6966   5 226    17.9 395.93
-## 58  0.01432 100.0  1.32    0 0.4110 6.816  40.5  8.3248   5 256    15.1 392.90
-## 65  0.01951  17.5  1.38    0 0.4161 7.104  59.5  9.2229   3 216    18.6 393.24
-## 85  0.05059   0.0  4.49    0 0.4490 6.389  48.0  4.7794   3 247    18.5 396.90
-## 86  0.05735   0.0  4.49    0 0.4490 6.630  56.1  4.4377   3 247    18.5 392.30
-## 87  0.05188   0.0  4.49    0 0.4490 6.015  45.1  4.4272   3 247    18.5 395.99
-## 88  0.07151   0.0  4.49    0 0.4490 6.121  56.8  3.7476   3 247    18.5 395.15
-## 89  0.05660   0.0  3.41    0 0.4890 7.007  86.3  3.4217   2 270    17.8 396.90
-## 90  0.05302   0.0  3.41    0 0.4890 7.079  63.1  3.4145   2 270    17.8 396.06
-## 91  0.04684   0.0  3.41    0 0.4890 6.417  66.1  3.0923   2 270    17.8 392.18
-## 92  0.03932   0.0  3.41    0 0.4890 6.405  73.9  3.0921   2 270    17.8 393.55
-## 93  0.04203  28.0 15.04    0 0.4640 6.442  53.6  3.6659   4 270    18.2 395.01
-## 94  0.02875  28.0 15.04    0 0.4640 6.211  28.9  3.6659   4 270    18.2 396.33
-## 95  0.04294  28.0 15.04    0 0.4640 6.249  77.3  3.6150   4 270    18.2 396.90
-## 96  0.12204   0.0  2.89    0 0.4450 6.625  57.8  3.4952   2 276    18.0 357.98
-## 97  0.11504   0.0  2.89    0 0.4450 6.163  69.6  3.4952   2 276    18.0 391.83
-## 98  0.12083   0.0  2.89    0 0.4450 8.069  76.0  3.4952   2 276    18.0 396.90
-## 99  0.08187   0.0  2.89    0 0.4450 7.820  36.9  3.4952   2 276    18.0 393.53
-## 100 0.06860   0.0  2.89    0 0.4450 7.416  62.5  3.4952   2 276    18.0 396.90
-## 121 0.06899   0.0 25.65    0 0.5810 5.870  69.7  2.2577   2 188    19.1 389.15
-## 122 0.07165   0.0 25.65    0 0.5810 6.004  84.1  2.1974   2 188    19.1 377.67
-## 123 0.09299   0.0 25.65    0 0.5810 5.961  92.9  2.0869   2 188    19.1 378.09
-## 124 0.15038   0.0 25.65    0 0.5810 5.856  97.0  1.9444   2 188    19.1 370.31
-## 125 0.09849   0.0 25.65    0 0.5810 5.879  95.8  2.0063   2 188    19.1 379.38
-## 126 0.16902   0.0 25.65    0 0.5810 5.986  88.4  1.9929   2 188    19.1 385.02
-## 127 0.38735   0.0 25.65    0 0.5810 5.613  95.6  1.7572   2 188    19.1 359.29
-## 180 0.05780   0.0  2.46    0 0.4880 6.980  58.4  2.8290   3 193    17.8 396.90
-## 181 0.06588   0.0  2.46    0 0.4880 7.765  83.3  2.7410   3 193    17.8 395.56
-## 182 0.06888   0.0  2.46    0 0.4880 6.144  62.2  2.5979   3 193    17.8 396.90
-## 183 0.09103   0.0  2.46    0 0.4880 7.155  92.2  2.7006   3 193    17.8 394.12
-## 184 0.10008   0.0  2.46    0 0.4880 6.563  95.6  2.8470   3 193    17.8 396.90
-## 185 0.08308   0.0  2.46    0 0.4880 5.604  89.8  2.9879   3 193    17.8 391.00
-## 186 0.06047   0.0  2.46    0 0.4880 6.153  68.8  3.2797   3 193    17.8 387.11
-## 187 0.05602   0.0  2.46    0 0.4880 7.831  53.6  3.1992   3 193    17.8 392.63
-## 194 0.02187  60.0  2.93    0 0.4010 6.800   9.9  6.2196   1 265    15.6 393.37
-## 195 0.01439  60.0  2.93    0 0.4010 6.604  18.8  6.2196   1 265    15.6 376.70
-## 196 0.01381  80.0  0.46    0 0.4220 7.875  32.0  5.6484   4 255    14.4 394.23
-## 204 0.03510  95.0  2.68    0 0.4161 7.853  33.2  5.1180   4 224    14.7 392.78
-## 205 0.02009  95.0  2.68    0 0.4161 8.034  31.9  5.1180   4 224    14.7 390.55
-## 206 0.13642   0.0 10.59    0 0.4890 5.891  22.3  3.9454   4 277    18.6 396.90
-## 207 0.22969   0.0 10.59    0 0.4890 6.326  52.5  4.3549   4 277    18.6 394.87
-## 208 0.25199   0.0 10.59    0 0.4890 5.783  72.7  4.3549   4 277    18.6 389.43
-## 209 0.13587   0.0 10.59    1 0.4890 6.064  59.1  4.2392   4 277    18.6 381.32
-## 210 0.43571   0.0 10.59    1 0.4890 5.344 100.0  3.8750   4 277    18.6 396.90
-## 211 0.17446   0.0 10.59    1 0.4890 5.960  92.1  3.8771   4 277    18.6 393.25
-## 212 0.37578   0.0 10.59    1 0.4890 5.404  88.6  3.6650   4 277    18.6 395.24
-## 213 0.21719   0.0 10.59    1 0.4890 5.807  53.8  3.6526   4 277    18.6 390.94
-## 214 0.14052   0.0 10.59    0 0.4890 6.375  32.3  3.9454   4 277    18.6 385.81
-## 215 0.28955   0.0 10.59    0 0.4890 5.412   9.8  3.5875   4 277    18.6 348.93
-## 216 0.19802   0.0 10.59    0 0.4890 6.182  42.4  3.9454   4 277    18.6 393.63
-## 217 0.04560   0.0 13.89    1 0.5500 5.888  56.0  3.1121   5 276    16.4 392.80
-## 218 0.07013   0.0 13.89    0 0.5500 6.642  85.1  3.4211   5 276    16.4 392.78
-## 219 0.11069   0.0 13.89    1 0.5500 5.951  93.8  2.8893   5 276    16.4 396.90
-## 220 0.11425   0.0 13.89    1 0.5500 6.373  92.4  3.3633   5 276    16.4 393.74
-## 257 0.01538  90.0  3.75    0 0.3940 7.454  34.2  6.3361   3 244    15.9 386.34
-## 258 0.61154  20.0  3.97    0 0.6470 8.704  86.9  1.8010   5 264    13.0 389.70
-## 259 0.66351  20.0  3.97    0 0.6470 7.333 100.0  1.8946   5 264    13.0 383.29
-## 260 0.65665  20.0  3.97    0 0.6470 6.842 100.0  2.0107   5 264    13.0 391.93
-## 261 0.54011  20.0  3.97    0 0.6470 7.203  81.8  2.1121   5 264    13.0 392.80
-## 262 0.53412  20.0  3.97    0 0.6470 7.520  89.4  2.1398   5 264    13.0 388.37
-## 263 0.52014  20.0  3.97    0 0.6470 8.398  91.5  2.2885   5 264    13.0 386.86
-## 264 0.82526  20.0  3.97    0 0.6470 7.327  94.5  2.0788   5 264    13.0 393.42
-## 265 0.55007  20.0  3.97    0 0.6470 7.206  91.6  1.9301   5 264    13.0 387.89
-## 266 0.76162  20.0  3.97    0 0.6470 5.560  62.8  1.9865   5 264    13.0 392.40
-## 267 0.78570  20.0  3.97    0 0.6470 7.014  84.6  2.1329   5 264    13.0 384.07
-## 268 0.57834  20.0  3.97    0 0.5750 8.297  67.0  2.4216   5 264    13.0 384.54
-## 269 0.54050  20.0  3.97    0 0.5750 7.470  52.6  2.8720   5 264    13.0 390.30
-## 270 0.09065  20.0  6.96    1 0.4640 5.920  61.5  3.9175   3 223    18.6 391.34
-## 271 0.29916  20.0  6.96    0 0.4640 5.856  42.1  4.4290   3 223    18.6 388.65
-## 272 0.16211  20.0  6.96    0 0.4640 6.240  16.3  4.4290   3 223    18.6 396.90
-## 273 0.11460  20.0  6.96    0 0.4640 6.538  58.7  3.9175   3 223    18.6 394.96
-## 274 0.22188  20.0  6.96    1 0.4640 7.691  51.8  4.3665   3 223    18.6 390.77
-## 275 0.05644  40.0  6.41    1 0.4470 6.758  32.9  4.0776   4 254    17.6 396.90
-## 276 0.09604  40.0  6.41    0 0.4470 6.854  42.8  4.2673   4 254    17.6 396.90
-## 277 0.10469  40.0  6.41    1 0.4470 7.267  49.0  4.7872   4 254    17.6 389.25
-## 278 0.06127  40.0  6.41    1 0.4470 6.826  27.6  4.8628   4 254    17.6 393.45
-## 279 0.07978  40.0  6.41    0 0.4470 6.482  32.1  4.1403   4 254    17.6 396.90
-## 280 0.21038  20.0  3.33    0 0.4429 6.812  32.2  4.1007   5 216    14.9 396.90
-## 281 0.03578  20.0  3.33    0 0.4429 7.820  64.5  4.6947   5 216    14.9 387.31
-## 282 0.03705  20.0  3.33    0 0.4429 6.968  37.2  5.2447   5 216    14.9 392.23
-## 283 0.06129  20.0  3.33    1 0.4429 7.645  49.7  5.2119   5 216    14.9 377.07
-## 284 0.01501  90.0  1.21    1 0.4010 7.923  24.8  5.8850   1 198    13.6 395.52
-## 287 0.01965  80.0  1.76    0 0.3850 6.230  31.5  9.0892   1 241    18.2 341.60
-## 291 0.03502  80.0  4.95    0 0.4110 6.861  27.9  5.1167   4 245    19.2 396.90
-## 292 0.07886  80.0  4.95    0 0.4110 7.148  27.7  5.1167   4 245    19.2 396.90
-## 293 0.03615  80.0  4.95    0 0.4110 6.630  23.4  5.1167   4 245    19.2 396.90
-## 305 0.05515  33.0  2.18    0 0.4720 7.236  41.1  4.0220   7 222    18.4 393.68
-## 306 0.05479  33.0  2.18    0 0.4720 6.616  58.1  3.3700   7 222    18.4 393.36
-## 307 0.07503  33.0  2.18    0 0.4720 7.420  71.9  3.0992   7 222    18.4 396.90
-## 308 0.04932  33.0  2.18    0 0.4720 6.849  70.3  3.1827   7 222    18.4 396.90
-## 334 0.05083   0.0  5.19    0 0.5150 6.316  38.1  6.4584   5 224    20.2 389.71
-## 335 0.03738   0.0  5.19    0 0.5150 6.310  38.5  6.4584   5 224    20.2 389.40
-## 336 0.03961   0.0  5.19    0 0.5150 6.037  34.5  5.9853   5 224    20.2 396.90
-## 337 0.03427   0.0  5.19    0 0.5150 5.869  46.3  5.2311   5 224    20.2 396.90
-## 338 0.03041   0.0  5.19    0 0.5150 5.895  59.6  5.6150   5 224    20.2 394.81
-## 339 0.03306   0.0  5.19    0 0.5150 6.059  37.3  4.8122   5 224    20.2 396.14
-## 340 0.05497   0.0  5.19    0 0.5150 5.985  45.4  4.8122   5 224    20.2 396.90
-## 341 0.06151   0.0  5.19    0 0.5150 5.968  58.5  4.8122   5 224    20.2 396.90
-## 354 0.01709  90.0  2.02    0 0.4100 6.728  36.1 12.1265   5 187    17.0 384.46
-## 502 0.06263   0.0 11.93    0 0.5730 6.593  69.1  2.4786   1 273    21.0 391.99
-## 503 0.04527   0.0 11.93    0 0.5730 6.120  76.7  2.2875   1 273    21.0 396.90
-## 504 0.06076   0.0 11.93    0 0.5730 6.976  91.0  2.1675   1 273    21.0 396.90
-## 505 0.10959   0.0 11.93    0 0.5730 6.794  89.3  2.3889   1 273    21.0 393.45
-## 506 0.04741   0.0 11.93    0 0.5730 6.030  80.8  2.5050   1 273    21.0 396.90
-##     LSTAT MEDV
-## 2    9.14 21.6
-## 3    4.03 34.7
-## 4    2.94 33.4
-## 5    5.33 36.2
-## 6    5.21 28.7
-## 36   9.68 18.9
-## 37  11.41 20.0
-## 38   8.77 21.0
-## 39  10.13 24.7
-## 40   4.32 30.8
-## 41   1.98 34.9
-## 42   4.84 26.6
-## 43   5.81 25.3
-## 44   7.44 24.7
-## 45   9.55 21.2
-## 46  10.21 19.3
-## 47  14.15 20.0
-## 48  18.80 16.6
-## 49  30.81 14.4
-## 50  16.20 19.4
-## 51  13.45 19.7
-## 52   9.43 20.5
-## 53   5.28 25.0
-## 54   8.43 23.4
-## 56   4.81 35.4
-## 58   3.95 31.6
-## 65   8.05 33.0
-## 85   9.62 23.9
-## 86   6.53 26.6
-## 87  12.86 22.5
-## 88   8.44 22.2
-## 89   5.50 23.6
-## 90   5.70 28.7
-## 91   8.81 22.6
-## 92   8.20 22.0
-## 93   8.16 22.9
-## 94   6.21 25.0
-## 95  10.59 20.6
-## 96   6.65 28.4
-## 97  11.34 21.4
-## 98   4.21 38.7
-## 99   3.57 43.8
-## 100  6.19 33.2
-## 121 14.37 22.0
-## 122 14.27 20.3
-## 123 17.93 20.5
-## 124 25.41 17.3
-## 125 17.58 18.8
-## 126 14.81 21.4
-## 127 27.26 15.7
-## 180  5.04 37.2
-## 181  7.56 39.8
-## 182  9.45 36.2
-## 183  4.82 37.9
-## 184  5.68 32.5
-## 185 13.98 26.4
-## 186 13.15 29.6
-## 187  4.45 50.0
-## 194  5.03 31.1
-## 195  4.38 29.1
-## 196  2.97 50.0
-## 204  3.81 48.5
-## 205  2.88 50.0
-## 206 10.87 22.6
-## 207 10.97 24.4
-## 208 18.06 22.5
-## 209 14.66 24.4
-## 210 23.09 20.0
-## 211 17.27 21.7
-## 212 23.98 19.3
-## 213 16.03 22.4
-## 214  9.38 28.1
-## 215 29.55 23.7
-## 216  9.47 25.0
-## 217 13.51 23.3
-## 218  9.69 28.7
-## 219 17.92 21.5
-## 220 10.50 23.0
-## 257  3.11 44.0
-## 258  5.12 50.0
-## 259  7.79 36.0
-## 260  6.90 30.1
-## 261  9.59 33.8
-## 262  7.26 43.1
-## 263  5.91 48.8
-## 264 11.25 31.0
-## 265  8.10 36.5
-## 266 10.45 22.8
-## 267 14.79 30.7
-## 268  7.44 50.0
-## 269  3.16 43.5
-## 270 13.65 20.7
-## 271 13.00 21.1
-## 272  6.59 25.2
-## 273  7.73 24.4
-## 274  6.58 35.2
-## 275  3.53 32.4
-## 276  2.98 32.0
-## 277  6.05 33.2
-## 278  4.16 33.1
-## 279  7.19 29.1
-## 280  4.85 35.1
-## 281  3.76 45.4
-## 282  4.59 35.4
-## 283  3.01 46.0
-## 284  3.16 50.0
-## 287 12.93 20.1
-## 291  3.33 28.5
-## 292  3.56 37.3
-## 293  4.70 27.9
-## 305  6.93 36.1
-## 306  8.93 28.4
-## 307  6.47 33.4
-## 308  7.53 28.2
-## 334  5.68 22.2
-## 335  6.75 20.7
-## 336  8.01 21.1
-## 337  9.80 19.5
-## 338 10.56 18.5
-## 339  8.51 20.6
-## 340  9.74 19.0
-## 341  9.29 18.7
-## 354  4.50 30.1
-## 502  9.67 22.4
-## 503  9.08 20.6
-## 504  5.64 23.9
-## 505  6.48 22.0
-## 506  7.88 11.9</code></pre>
-<p><strong>Replacement</strong></p>
-<p>Validation</p>
+<p><strong>Validation</strong></p>
+<p>We validate the missing values which should account for 25% of the variable, TAX. The resulting NA’s volume at 25% is 128.</p>
 <p><img src="data:image/png;base64,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" /><!-- --></p>
 <pre><code>## 
 ##  Variables sorted by number of missings: 
@@ -2646,6 +1652,14 @@ fitimp30 &lt;- with(imp_long_mids30,
 <h2>Single Imputation with Mean</h2>
 <p><strong>Regression Using Mean Substitution</strong></p>
 <p>Adjusted R-squared: 0.7292 [1] “SSE for model is:” [1] 11269.16 [1] “MSE for model is:” [1] 22.27106</p>
+<pre class="r"><code># mean substitution for TAX
+boston_mnar_25.df$TAX &lt;- na.mean(boston_mnar_25.df$TAX)
+
+# regression model
+boston_mnar_25.lm &lt;- lm( MEDV ~ . , data = boston_mnar_25.df )
+
+# model results for goodniess of fit using adj r-sqr
+summary(boston_mnar_25.lm)</code></pre>
 <pre><code>## 
 ## Call:
 ## lm(formula = MEDV ~ ., data = boston_mnar_25.df)
@@ -2676,13 +1690,20 @@ fitimp30 &lt;- with(imp_long_mids30,
 ## Residual standard error: 4.786 on 492 degrees of freedom
 ## Multiple R-squared:  0.7362, Adjusted R-squared:  0.7292 
 ## F-statistic: 105.6 on 13 and 492 DF,  p-value: &lt; 2.2e-16</code></pre>
+<pre class="r"><code># sse for loss
+print(&quot;SSE for model is: &quot;)</code></pre>
 <pre><code>## [1] &quot;SSE for model is: &quot;</code></pre>
+<pre class="r"><code>sum(boston_mnar_25.lm$residuals ^ 2)</code></pre>
 <pre><code>## [1] 11269.16</code></pre>
+<pre class="r"><code># mse for loss
+print(&quot;MSE for model is: &quot;)</code></pre>
 <pre><code>## [1] &quot;MSE for model is: &quot;</code></pre>
+<pre class="r"><code>mean(boston_mnar_25.lm$residuals ^ 2) </code></pre>
 <pre><code>## [1] 22.27106</code></pre>
 </div>
 <div id="multiple-imputation-with-mice-2" class="section level2">
 <h2>Multiple Imputation with Mice</h2>
+<pre class="r"><code>imp_25 &lt;- mice(boston_mnar_25.df,  m = 5)</code></pre>
 <pre><code>## 
 ##  iter imp variable
 ##   1   1
@@ -2710,6 +1731,11 @@ fitimp30 &lt;- with(imp_long_mids30,
 ##   5   3
 ##   5   4
 ##   5   5</code></pre>
+<pre class="r"><code>boston.lm25_long &lt;- complete(imp_25, action=&quot;long&quot;, include = TRUE)
+imp_long_mids25 &lt;- as.mids(boston.lm25_long)
+fitimp25 &lt;- with(imp_long_mids25,
+               lm(MEDV ~   CRIM + ZN + INDUS + CHAS + NOX + RM + AGE + DIS + RAD + TAX + PTRATIO + B + LSTAT))
+summary(pool(fitimp25))</code></pre>
 <pre><code>##           term      estimate   std.error   statistic       df      p.value
 ## 1  (Intercept)  33.231495533 5.199774261   6.3909497 489.9625 3.842824e-10
 ## 2         CRIM  -0.107486555 0.033147605  -3.2426643 489.9625 1.264912e-03
@@ -2725,10 +1751,18 @@ fitimp30 &lt;- with(imp_long_mids30,
 ## 12     PTRATIO  -1.006355599 0.132323557  -7.6052641 489.9625 1.465494e-13
 ## 13           B   0.009480658 0.002708335   3.5005492 489.9625 5.067123e-04
 ## 14       LSTAT  -0.526802114 0.051234101 -10.2822555 489.9625 0.000000e+00</code></pre>
+<pre class="r"><code>pool.r.squared(fitimp25, adjusted=TRUE)</code></pre>
 <pre><code>##               est   lo 95     hi 95 fmi
 ## adj R^2 0.7292153 0.68631 0.7672185 NaN</code></pre>
-<p>#References <br> <strong><a href="https://www.kaggle.com/puxama/bostoncsv" class="uri">https://www.kaggle.com/puxama/bostoncsv</a></strong> <br> <a href="https://www.kaggle.com/c/boston-housing" class="uri">https://www.kaggle.com/c/boston-housing</a> <br> <a href="https://www.cs.toronto.edu/~delve/data/boston/bostonDetail.html" class="uri">https://www.cs.toronto.edu/~delve/data/boston/bostonDetail.html</a></p>
 </div>
+<div id="results-2" class="section level2">
+<h2>Results</h2>
+<p>There are not major differences between are adjusted R-square value that remains at .7292 for both a single and multiple imputation method. Our takeaway was the resulting adjusted r-squared or residuals did not show major differences for either single or multiple imputation methods. However what we though initially thought of a a negative result was really positive given the context that being the model we are using, the adjusted r-square and residuals closely matched those of our full data set. Meaning the imputation methods were able to mime the original data set and resulted in similar metrics. Using Listwise deletion resulted in adjusted r-squared and residuals similar to our full data model when the amount of missing data was small. Imputing when we had 50% missing data using Listwise deletion gave use our smalled adjusted r-squared value and sum of square results at .7121 and 11979 respectively.</p>
+</div>
+</div>
+<div id="references" class="section level1">
+<h1>References</h1>
+<p><br> <strong><a href="https://www.kaggle.com/puxama/bostoncsv" class="uri">https://www.kaggle.com/puxama/bostoncsv</a></strong> <br> <a href="https://www.kaggle.com/c/boston-housing" class="uri">https://www.kaggle.com/c/boston-housing</a> <br> <a href="https://www.cs.toronto.edu/~delve/data/boston/bostonDetail.html" class="uri">https://www.cs.toronto.edu/~delve/data/boston/bostonDetail.html</a></p>
 </div>
 
 

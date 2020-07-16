@@ -21,9 +21,11 @@ library(corrplot) # generates a correlation matrix for us
 library(naniar) # used to generate visualizations for missing data
 ```
 
+With the Boston housing data as our backdrop we observe the effect of different imputation methods ranging from single imputation via a global mean to multiple imputation methods. However this is dependent on missing data types, including missing completely at random, missing at random, and not missing at random. We assume the  data 'missing completely at random' is a result of the flooding in the basement where the housing records are stored. We also highlight the effect of listwise deletion on two extreme examples, data missing 1% and 50% for our feature PTRATIO. Data missing at random removes data for our columns CRIM and RAD that are dependent on Age. With intent we remove TAX data for our example of 'not missing at random' by removing data TAX data when it is equal to or less than 279. 
+
 ## Boston Data Set 
 
-Using the Boston Housing Data Set examine the effect on loss for data Missing Completely at Random for 10% 20% and 50% of the data. Repeat the analysis for Missing at random and Missing Not at random. 
+The Boston housing data set contains median housing prices collected bt the US Census Services and contains quantitative feature data such as the crime rate by town or the average number of rooms per dwelling.
 
 
 ## Initial Data Exploration
@@ -86,7 +88,6 @@ skim(boston.df)
 
 
 
-
 **Data Visualization**
 
 
@@ -96,7 +97,7 @@ ggplot(data = melt(boston.df), aes(x=variable, y=value)) + geom_boxplot(aes(fill
 ```
 
 
-
+Initially created a correlation matrix to view the impact of multicollinearity for predictor variables that show high correlation.
 
 ```{r}
 
@@ -122,7 +123,7 @@ aggr(boston.df,
 
 
 
-## Initial Regression Model
+# Initial Regression Model
 
 We are doing a regression on full data set, predicting MEDV, the median value of owner-occupied homes, using the other 13 parameters.
 
@@ -169,7 +170,10 @@ NOTE: Because AGE and INDUS were found to not be statistically significant we wi
 
 
 
-## MCAR
+# Missing Completely at Random with Regression: Single Imputation & Multiple Imputation
+<br>
+
+We will measure the effect of single imputation and multiple imputation using the PTRATIO, or pupil to teacher ratio. For our single imputation method we will use a global mean to replace our missing values for PTRATIO. This is under the backdrop of observations that are missing completely at random, or MCAR. We assume the housing records were flooded and we lost a random number of data sets at different rates. We will also use listwise deletion for our data sets missing 1% and 50% to measure the magnified effect to our mean square error and adjusted R-square.
 
 First generate vector of *unique* random numbers to correspond to each percentage
 
@@ -182,12 +186,10 @@ First generate vector of *unique* random numbers to correspond to each percentag
 
 
 **Value to be Deleted**
-* PTRATIO - pupil-teacher ratio by town
-
-
+<br>
+PTRATIO - pupil-teacher ratio by town
 
 Create vector to serve as sample index for creating NA values
-
 
 ```{r, echo=FALSE}
 
@@ -351,11 +353,6 @@ aggr(boston_mcar_50.df,
 
 ```
 
-
-# Missing Completely at Random with Regression: Single Imputation & Multiple Imputation
-<br>
-
-We will measure the effect of single imputation and multiple imputation using the PTRATIO, or pupil to teacher ratio. For our single imputation method we will use a global mean to replace our missing values for PTRATIO. This is under the backdrop of observations that are missing completely at random, or MCAR. We assume the housing records were flooded and we lost a random number of data sets at different rates. We will also use listwise deletion for our data sets missing 1% and 50% to measure the magnified effect to our mean square error and adjusted R-square.
 
 
 ## Single Imputation with Mean
@@ -554,7 +551,11 @@ mean(boston_mcar_50.lm$residuals ^ 2)
 
 ```
 
+Overall our adjusted R-square value fell as we increased the amount of missing data and filled with a global mean. In contrast our sum of square increased as we filled more missing data with a global mean. 
+
 ## Listwise Deletion at 1% MCAR and 50% MCAR
+
+The listewise approach will remove the 1% and 50% missing data and model thereafter using our lm function.
 
 ```{r}
 lwd1 <- lm( MEDV ~ . , data = boston_mcar_01.df, na.action = na.omit  )
@@ -632,6 +633,8 @@ boston.lm50_long <- complete(imp_50, action="long", include = TRUE)
 
 ```
 
+We can see there are 5 new datasets with their respective imputed data sets, 0 acting as our original data set.
+
 ```{r}
 
 table(boston.lm50_long$.imp)
@@ -677,16 +680,26 @@ fitimp50 <- with(imp_long_mids50,
 
 ```
 
+Multiple imputation results with 50% missing data.
+
 ```{r}
 summary(pool(fitimp50))
 
 pool.r.squared(fitimp50, adjusted=TRUE)
+
+```
+
+Results for other missing data sets.
+
+```{r}
 pool.r.squared(fitimp01, adjusted=TRUE)
 pool.r.squared(fitimp05, adjusted=TRUE)
 pool.r.squared(fitimp10, adjusted=TRUE)
 pool.r.squared(fitimp20, adjusted=TRUE)
 pool.r.squared(fitimp33, adjusted=TRUE)
 ```
+
+Interestingly our adjusted r-squared value remain pretty constant when filling out missing data from a distribution pool from our multiple imputation method. 
 
 ## Results
 
@@ -964,11 +977,33 @@ fitimp30 <- with(imp_long_mids30,
                lm(MEDV ~   CRIM + ZN + INDUS + CHAS + NOX + RM + AGE + DIS + RAD + TAX + PTRATIO + B + LSTAT))
 ```
 
+Results for 10% missing data modeled after multiple imputation applied.
+
 ```{r}
 summary(pool(fitimp10))
 
 pool.r.squared(fitimp10, adjusted=TRUE)
 ```
+
+Results for 20% missing data modeled after multiple imputation applied.
+
+```{r}
+summary(pool(fitimp20))
+
+pool.r.squared(fitimp20, adjusted=TRUE)
+```
+
+Results for 30% missing data modeled after multiple imputation applied.
+
+```{r}
+summary(pool(fitimp30))
+
+pool.r.squared(fitimp30, adjusted=TRUE)
+```
+
+## Results
+
+There were no significant differences with our adjusted r-square values between imputation methods, either single or multiple. However that doesnt mean the imputation didn't do its job well as it closely matched our adjusted r-squared value of 73.38 for our full data set modeled with a linear regression model.
 
 # Missing Not at Random with Regression: Single Imputation & Multiple Imputation
 
@@ -979,7 +1014,7 @@ When TAX <= 279 entries will be replaced with the NA value
 * TAX <= 279 [128 values 25.3%]
 
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, results = 'hide'}
 
 # create 10% MAR dataframe
 boston.df -> boston_mnar_25.df
@@ -989,10 +1024,6 @@ boston_mnar_25.df[boston_mnar_25.df$TAX <= 279,]
 
 
 ```
-
-
-**Replacement**
-
 
 
 ```{r, echo=FALSE}
@@ -1005,7 +1036,9 @@ boston_mnar_25.df$TAX <- ifelse(boston_mnar_25.df$TAX <= 279, NA, boston_mnar_25
 
 ```
 
-Validation
+**Validation**
+
+We validate the missing values which should account for 25% of the variable, TAX. The resulting NA's volume at 25% is 128.
 
 ```{r, echo=FALSE}
 
@@ -1015,8 +1048,6 @@ aggr(boston_mnar_25.df,
      numbers = TRUE, 
      sortVars = TRUE, 
      sortCombs = TRUE)
-
-
 
 ```
 
@@ -1030,7 +1061,7 @@ Adjusted R-squared:  0.7292
 [1] "MSE for model is: "
 [1] 22.27106
 
-```{r, echo=FALSE}
+```{r}
 
 # mean substitution for TAX
 boston_mnar_25.df$TAX <- na.mean(boston_mnar_25.df$TAX)
@@ -1055,7 +1086,7 @@ mean(boston_mnar_25.lm$residuals ^ 2)
 
 ## Multiple Imputation with Mice
 
-```{r, echo=FALSE}
+```{r}
 
 imp_25 <- mice(boston_mnar_25.df,  m = 5)
 boston.lm25_long <- complete(imp_25, action="long", include = TRUE)
@@ -1069,6 +1100,9 @@ pool.r.squared(fitimp25, adjusted=TRUE)
 
 ```
 
+## Results
+
+There are not major differences between are adjusted R-square value that remains at .7292 for both a single and multiple imputation method. Our takeaway was the resulting adjusted r-squared or residuals did not show major differences for either single or multiple imputation methods. However what we though initially thought of a a negative result was really positive given the context that being the model we are using, the adjusted r-square and residuals closely matched those of our full data set. Meaning the imputation methods were able to mime the original data set and resulted in similar metrics. Using Listwise deletion resulted in adjusted r-squared and residuals similar to our full data model when the amount of missing data was small. Imputing when we had 50% missing data using Listwise deletion gave use our smalled adjusted r-squared value and sum of square results at .7121 and 11979 respectively.
 
 
 # References
