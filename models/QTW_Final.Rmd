@@ -1,0 +1,74 @@
+---
+title: "QTW_Final_Case_Study"
+output: html_document
+---
+
+
+```{r}
+
+library(tidyverse)
+library(readr)
+
+```
+
+
+
+```{r}
+
+# read in data
+df <- read_csv("../data/final_project.csv")
+#df <- read_csv("data/final_project.csv")
+
+df <- as.data.frame(df)
+```
+
+## Missing Data / Imputation Method
+
+
+We check possible imputation routes by looking at our missing data.
+
+Overall our columns do not have missing data, however if we apply listwise deletion these volumes are will add up.
+
+```{r}
+
+sapply(df, function(x) sum(is.na(x))) 
+
+```
+
+Less than 2 percent of observations are removed when apply a listwise deletion approach. Taking the path of least resistance we use only observations where the full data is known.
+
+```{r}
+
+df_imputed <- na.omit(df)
+
+percent_difference <- nrow(df_imputed)/nrow(df)
+
+percent_difference
+
+```
+
+
+## Data Munging
+
+The model we ultimately decide to use helps guide how we want to transform the data. 
+
+Columns with strings can be transformed with one hot encoding if there are not too many classes for these features and if the model requires numeric input. A quick structure function shows us the following are data types char for strings: x24,x29,x30, and x37.
+
+```{r}
+
+str(df_imputed)
+
+```
+
+```{r}
+
+characters <- df_imputed %>%
+  select_if(is.character) %>%
+  mutate(x32 = as.numeric(gsub("\\%$","",x32)),
+         x37 = as.numeric(gsub("^\\$","",x37)))
+
+head(characters)
+
+```
+
+
