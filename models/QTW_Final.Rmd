@@ -7,7 +7,6 @@ output: html_document
 ```{r}
 
 library(tidyverse)
-library(readr)
 
 ```
 
@@ -15,11 +14,8 @@ library(readr)
 
 ```{r}
 
-# read in data
-df <- read_csv("../data/final_project.csv")
-#df <- read_csv("data/final_project.csv")
+df <- read.csv("C:/Users/marti/OneDrive/Desktop/QTW/Weeks/data/final_project.csv")
 
-df <- as.data.frame(df)
 ```
 
 ## Missing Data / Imputation Method
@@ -35,15 +31,18 @@ sapply(df, function(x) sum(is.na(x)))
 
 ```
 
-Less than 2 percent of observations are removed when apply a listwise deletion approach. Taking the path of least resistance we use only observations where the full data is known.
+Less than 1 percent of observations are removed when apply a listwise deletion approach. Taking the path of least resistance we use only observations where the full data is known.
 
 ```{r}
 
 df_imputed <- na.omit(df)
 
-percent_difference <- nrow(df_imputed)/nrow(df)
+percent_difference <- (nrow(df)-nrow(df_imputed))/nrow(df)
 
-percent_difference
+print(percent_difference)
+
+print(paste0("The number of observations prior to imputation is : ", nrow(df)))
+print(paste0("The number of after listwise deletion : ", nrow(df_imputed)))
 
 ```
 
