@@ -1,0 +1,856 @@
+---
+title: "DS7333 Final Case Study"
+author: "Christian Nava, Jeremy Otsap, Martin Garcia, Michael Catalano, "
+date: "8/1/2020"
+output: 
+    html_document:
+        keep_md: true
+---
+
+
+```{r,echo=FALSE}
+
+library(tidyverse) # data wrangling
+library(modelr) # factor manipulation
+library(skimr) # data exploration
+library(na.tools) # for mean imputation
+library(ggplot2) #visualization
+library(reshape2) #wide / long for visualization
+library(corrplot) # visualisation
+library(VIM) # missing values
+#library(vip)
+library(car) # modeling
+library(caret) # model training & hyperparameter tuning
+library(ROCR) # model validation
+library(MASS) # model validation
+library(ranger) # modeling Random Forest
+library(e1071) # modeling Random Forest tuning
+library(neuralnet) # forward feed neural net
+
+```
+
+
+Data set has 160.000 rows and  51 columns
+
+```{r}
+# loading data file from Azure Blob Storage as it exceeds the size threshold for github
+
+final.df <- read.csv("https://modisdatawu2sqlml01.blob.core.windows.net/smu-data/ds7333/final_project.csv", header = T)
+
+```
+
+
+```{r}
+#examine data
+
+str(final.df)
+summary(final.df)
+
+```
+
+
+## Data Munging
+
+With the exception of the columns below, all of the 'X' predictors are numeric values:
+
+* x24: factor [countries]
+* x29: factor [month]
+* x30: factor [day]
+* **x32: factor [percentage change]**
+* **x37: factor [dollars]**
+
+R automatically can convert factors into 1-hot encoded values [depending on the package or algorithm], however columns x32 and x37 are being mislabeled as factor due to the $ and % characters. In order to correctly analye these columns we need to convert these to numeric values
+
+
+```{r}
+
+# convert percentage factor to numeric
+as.numeric(gsub("\\%","",final.df$x32)) -> final.df$x32
+# convert dollar factor to numeric
+as.numeric(gsub("\\$","",final.df$x37)) -> final.df$x37
+
+# validate x32 and x37 are now numeric
+str(final.df[,c(33,38)])
+
+
+```
+
+
+
+## Missing Data: Imputation Method
+
+
+Looking at the missing data, we can see that each column has its own unique set of missing values, which dont align to other columns / parameters. What that means is if we choose to select listwise deletion, it will delete an entire row for that column's one missing value. This will result in 1466 deleted rows
+
+
+
+```{r}
+
+sapply(final.df, function(x) sum(is.na(x))) 
+
+# visualize missing data
+aggr(final.df, 
+     prop = FALSE, 
+     combined = TRUE, 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     sortCombs = TRUE)
+
+```
+
+
+### Listwise Deletion
+
+Far less than 1 percent of observations are removed when apply a listwise deletion approach. This certainly qualifies for listwise deletion and is the path of least resistance; however, the way the missing values are spread through out the data this **maximizes data loss**
+
+
+```{r}
+
+# output number of missing rows
+print("total number of deleted rows: ")
+print(dim(final.df)[1] - dim(na.omit(final.df))[1] )
+
+# apply listwise deletion to new dataframe
+final_impute.df <- na.omit(final.df)
+
+print( "The percentage difference for listwise deletion is: "  )
+print( (nrow(final.df)-nrow(final_impute.df))/nrow(final.df) )
+
+
+
+```
+
+
+
+### Mean Substitution + Listwise Deletion
+
+For the final soluion we will use a hybrid approach:
+
+**STEP 1: Listwise Deletion on Categorical Columns**
+
+We validate there are **no missing values** on the following categorical columns, thus imputation method not required
+
+* x24: factor [countries]
+* x29: factor [month]
+* x30: factor [day]
+
+
+
+```{r}
+
+# output number of remaining rows after applying listwise deletion
+print("total number of missing rows in X24: ")
+sum(is.na(final.df$x24))
+
+print("total number of missing rows in X29: ")
+sum(is.na(final.df$x29))
+
+print("total number of missing rows in X30: ")
+sum(is.na(final.df$x30))
+
+
+```
+
+
+
+**STEP 2: Mean Substitution on Remaining Numerical Columns**
+
+For all numerical columns we will use mean substitution
+
+
+```{r}
+
+# create new dataframe
+final.df -> final_msub.df
+
+# NOTE: do not globally sapply na.mean to entire data frame or it will ERRONEOUSLY convert categorical columns to numeric
+#sapply(final_msub.df, function(x) na.mean(x) ) %>% as.data.frame() -> final_msub.df
+
+# NOTE: apply(final.df, 2, is.na) forces to categorical
+#na.mean(final_msub.df$x0) -> final_msub.df$x0
+
+# loop through na.mean
+loop_length <- length(final_msub.df)
+
+for (i in c(1:24,26:29,32:51) ) {
+  na.mean(final_msub.df[,i]) -> final_msub.df[,i]
+  i = i + 1
+}
+
+```
+
+
+Verify new imputed dataframe
+
+```{r}
+
+# verify x24, x29, and x30 are still categorical
+str(final_msub.df[,c(25, 30, 31)])
+
+# verify all missing values have been imputd
+sapply(final_msub.df, function(x) sum(is.na(x))) 
+
+# visualize missing data
+aggr(final_msub.df, 
+     prop = FALSE, 
+     combined = TRUE, 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     sortCombs = TRUE)
+
+
+```
+
+
+
+
+##Data Visualization
+
+We can see x37 [likely the dollars] has a dramatically larger range than the rest of the attributes, thus scaling and centering will probably be required. Or optionally we can divide by 1000 to represent $1000's of dollars
+
+
+```{r, echo=FALSE}
+
+ggplot(data = melt(final_msub.df), aes(x=variable, y=value)) + geom_boxplot(aes(fill=variable)) + coord_flip()
+```
+
+
+```{r}
+
+# compare range of x37 raw and divided by 1000
+
+summary(final_msub.df$x37)
+summary((final_msub.df$x37)/1000)
+
+```
+
+
+
+## Intial Model: Random Forest
+
+Note: For the caret package to properly process the randomforest, the response must be categorical binary
+
+
+```{r}
+# OPTIONAL: CATEGORIZE Y 
+final_msub.df <- final_msub.df %>% mutate(y = factor(y) )
+
+```
+
+
+
+**Train / Test Sample Split**
+
+One of the challenges of creating the test / train split is accounting for the unbalanced level of your response variable. In this case:
+
+
+0 - 95803
+1 - 64197 
+ 
+Thus we need to insure both the train and test samples reflect this ratio
+
+
+```{r}
+
+# creating the 80 data partition 
+final_split <- createDataPartition(final_msub.df$y, p = 0.8, list = F)
+# including 80 for training set
+final_train.df <- final_msub.df[final_split,] 
+# excluding 80 for testing set
+final_test.df <- final_msub.df[-final_split,]
+# validating
+dim(final_test.df)
+dim(final_train.df)
+
+```
+
+
+```{r}
+
+# compare level split of main data frame
+table(final_msub.df$y)
+
+# validating sample maintained ratio for response levels
+table(final_test.df$y)
+table(final_train.df$y)
+
+```
+
+
+**CONCERN 1: LARGE DATA SET**
+
+We can use random selection vs the default grid searching. The scope of this is beyond this exercise, but essentially with a large number of hyperparameters, random may be a better option. More info can be read on the Caret package here:
+
+https://topepo.github.io/caret/random-hyperparameter-search.html
+
+
+Additionally we allow parallel processing to optimize the speed of the modeling
+
+
+**CONCERN 2: WIDE RANGE OF VALUES ACROSS PREDICTORS**
+
+As per above the ranges vary significantly across the predictors, esp x37, thus we will scale and center the values
+
+Note: given the huge data size, we can use x37/1000 instead of scale/center if procesing time becomes an issue
+
+
+
+
+**RANGER ALGORITHM**
+
+```{r}
+
+# default mtry for classification is sqrt(# of features)
+mtry_final <- floor(sqrt(ncol(final_train.df)))
+#tuneGrid = expand.grid(mtry = c(4,5,6))
+
+# training RF model
+
+ranger(
+  y ~ .,
+  data = final_train.df,
+  mtry = mtry_final,
+  respect.unordered.factors = "order",
+  seed = 665
+) -> final_train.rf
+
+```
+
+
+
+```{r}
+
+#RMSE
+print("RMSE for model is: ")
+print( sqrt(final_train.rf$prediction.error) )
+
+
+final_train.rf$confusion.matrix
+
+
+
+# best tuning parameter
+#final_train.rf$bestTune
+
+#final model
+#final_train.rf$finalModel
+```
+
+
+### Evaluating model with test predictions
+
+The OB estimate of error rate of 20.87% is calculated using observations not in the "bag" with respect to bagging / boosting sample selection. I.e. the training set *not* used for building the decision tree. Thus this implies when this model is applied to NEW data, the answers will be in error around 21% of the time.
+
+
+```{r}
+# predictions
+predict(
+  final_train.rf,
+  data = final_test.df,
+  ) -> final_forest.pred
+```
+
+**AUC and RMSE**
+
+"AUC Value for this model is "
+0.9194343
+"RMSE Value for this model is "
+0.2701315
+
+
+```{r}
+# AUC plot
+# NOTE: must convert values to numeric to use function
+performance(
+  ROCR::prediction( as.numeric(final_forest.pred$predictions),
+              as.numeric(final_test.df$y) ),
+  measure = "tpr",
+  x.measure = "fpr"
+) -> final_forest.perf 
+plot(final_forest.perf)
+
+# AUC value
+print("AUC Value for this model is ")
+performance(
+  ROCR::prediction( as.numeric(final_forest.pred$predictions),
+              as.numeric(final_test.df$y) ),
+  measure = "auc",
+  )@y.values[[1]] 
+
+# RMSE
+print("RMSE Value for this model is ")
+RMSE( as.numeric(final_forest.pred$predictions), 
+      as.numeric(final_test.df$y) )
+```
+
+
+**Confusion Matrix**
+
+Note: to assure an accurate confusion matrix we explicity specify 1 as the reference, as opposed to letting the software randomly decide.
+
+
+Accuracy : 0.927
+Sensitivity : 0.8810 
+Specificity : 0.9579
+
+
+
+```{r}
+# confusion matrix
+caret::confusionMatrix(
+  data = relevel(final_forest.pred$predictions, ref = "1"),
+  reference = relevel(final_test.df$y , ref = "1")
+)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+**TUNING RANDOM FOREST ALGORITHM**
+
+
+Random forest standard splitting rule is biased when predictor variables vary in their scale. This also has a substantial impact on the variable importance. In the case of the Gini variable importance,predictor variables with many categories or numerical values receive on average a higher variable importance than binaryvariables if both variables have no influence on the outcome variable. The permutation variable importance remainsunbiased in these cases, but there is a higher variance of the variable importance for variables with many categories
+
+Higher mtry values lead to lower variable importance of weak regressors. The values of the variable importance from the standard random forest were far less dependent on mtry than the ones from the conditional inference forests. This was due to the much larger size (i.e., number of splits untilthe terminal node) of individual trees in the standard random forest. 
+
+Decreasing the tree size (for example by setting a higher node size value) while setting mtry to a small value leads to more equal values of the variable importances of all variables, because there was less chance that relevant variables were chosen in the splitting procedure
+
+
+```{r}
+
+# cluster preparation for parallel CPU
+library(parallel)
+library(doParallel)
+cluster <- makeCluster(detectCores() - 1) # leave 1 core for OS
+registerDoParallel(cluster)
+
+# training grid
+trainControl(
+  method = "oob", 
+# summaryFunction = twoClassSummary, 
+  savePredictions = T, 
+  classProbs = F, 
+  verboseIter = T,
+  search = "random",
+  allowParallel = T
+  ) -> final_caret.grid
+
+# tuning grid
+
+final_tune.grid <- expand.grid( mtry = c(5,6,7), splitrule = "gini", min.node.size = c(1,2,3) )
+
+# training RF model
+train(
+  y ~ .,
+  data = final_train.df,
+  method = "ranger",
+  trControl = final_caret.grid, 
+  num.threads = (detectCores() - 1),
+#  preProcess = c("scale","center"),
+  tuneGrid = final_tune.grid,
+  importance = 'permutation', #'impurity',
+  metric = "Accuracy"
+) -> final_train.caret
+
+
+### SHUTDOWN CLUSTER
+stopCluster(cluster)
+#registerDoSEQ()
+
+```
+
+**Hyperparameter Tuning**
+
+There are a number of hyperparameters that can be optimized to improve model performance: 
+
+* How many random variables should be included in each tree? **mtry** parameter
+* What is minimum depth of each tree before a split can occur? **min.node.size** parameter
+* What is the criteria to split trees? **splitrule**
+
+Here however the functionality of looping through the **mtry** values of 5,6, and 7, and **min.node.size** values of 1, 2, 3 and selecting the best one is built in to the model tuning
+
+**Defaults**
+* mtry: sqrt(# of predictors) ~7 in this case
+* min.node.size: 1 for classification
+
+
+**Final Model**
+
+Type:                             Classification 
+Number of trees:                  500 
+Sample size:                      128001 
+Number of independent variables:  67 
+Mtry:                             7 
+Target node size:                 2 
+Variable importance mode:         permutation 
+Splitrule:                        gini 
+OOB prediction error:             7.91 % 
+
+
+```{r}
+# best tuning parameter
+final_train.caret$bestTune
+#final model
+final_train.caret$finalModel
+```
+
+
+
+
+### Evaluating model with test predictions
+
+Make predictions w/ best model
+* mtry: 7
+* splitrule: gini
+* min.node.size: 2
+
+
+```{r}
+# predictions
+predict(final_train.caret, final_test.df) -> final_caret.pred
+
+```
+
+
+**AUC and RMSE**
+
+"AUC Value for this model is "
+0.9140067
+"RMSE Value for this model is "
+0.2782803
+
+
+```{r}
+# AUC plot
+# NOTE: must convert values to numeric to use function
+performance(
+  ROCR::prediction( as.numeric(final_caret.pred), 
+              as.numeric(final_test.df$y)
+              ),
+  measure = "tpr",
+  x.measure = "fpr"
+) -> final_caret.perf 
+plot(final_caret.perf)
+
+# AUC value
+print("AUC Value for this model is ")
+performance(
+  ROCR::prediction( as.numeric(final_caret.pred),
+              as.numeric(final_test.df$y) ),
+  measure = "auc",
+  )@y.values[[1]] 
+
+# RMSE
+print("RMSE Value for this model is ")
+RMSE( as.numeric(final_caret.pred), 
+      as.numeric(final_test.df$y) )
+```
+
+
+**Confusion Matrix**
+
+Note: to assure an accurate confusion matrix we explicity specify 1 as the reference, as opposed to letting the software randomly decide.
+
+
+Accuracy : 0.9226
+Sensitivity : 0.8707
+Specificity : 0.9573
+
+
+```{r}
+# confusion matrix
+caret::confusionMatrix(
+  data = relevel(final_caret.pred, ref = "1"),
+  reference = relevel(final_test.df$y , ref = "1")
+)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+**Variable Importance & Impurity**
+
+
+```{r}
+
+# bare bones importance plot
+# unfortunatley ranger objects do not work for varImpPlot
+plot(varImp(final_train.caret), main = "Variable Importance")
+
+```
+
+
+```{r}
+
+# sexier importance plot
+final_caret_imp.df <- as.data.frame(final_train.caret$finalModel$variable.importance)
+
+#rownames
+final_caret_imp.df$x_label <- rownames(final_caret_imp.df)
+
+#rename column
+names(final_caret_imp.df)[1] <- "x_value"
+
+
+#ggplot
+ggplot(final_caret_imp.df, aes(x=reorder(x_label,x_value), y=x_value,fill=x_value)) + geom_bar(stat = 'identity') + coord_flip() + ylab("Importance") + xlab("") + ggtitle("Variable Importance") + guides(fill=F) + scale_fill_gradient(low="gray", high="blue")
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##Neurel Net w/ Caret 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##Model: FOrward Feed Neural Net
+
+
+Given the output of our random forest model, we will limit to variables found to have the highest importance, as per the earlier plot above:
+
+x23
+x20
+x48
+x49
+x12
+x42
+x27
+x28
+x37
+x7
+x46
+x40
+x41
+x38
+x32
+x6
+x2
+
+
+
+```{r}
+
+### NOTE: the standard formula syntax of "y ~ ." is not accepted in the neuralnet() function 
+## Must first create formula object then pass it to neuralnet() function
+#train_names <- names(final_train.df)
+#train_formula <- as.formula(paste("y ~", paste(train_names[!train_names %in% "y"], collapse = " + ")))
+
+train_formula <- as.formula(y ~ x23 + x20 + x48 + x49 + x12 + x42 + x27 + x28 + x37 + x7 + x46 + x40 + x41 + x38 + x32 + x6 + x2)
+
+
+neuralnet(formula =  train_formula, 
+          data = final_train.df,
+          hidden = c(7,7),
+          linear.output = F, #for classification
+          threshold = 0.01
+          ) -> final_train.net
+
+
+```
+
+
+
+
+
+
+
+```{r}
+
+# cluster preparation for parallel CPU
+library(parallel)
+library(doParallel)
+cluster <- makeCluster(detectCores() - 1) # leave 1 core for OS
+registerDoParallel(cluster)
+
+# training grid
+nn.grid <- expand.grid(size = c(10), decay = c(0.1))
+
+trainControl(
+  method = "cv", 
+  number = 5,
+#  summaryFunction = twoClassSummary,
+  allowParallel = T,
+  classProbs = F, 
+  verboseIter = T, 
+  search = "random"
+  ) -> final_nnet.grid
+
+# formula
+train_formula <- as.formula(y ~ x23 + x20 + x48 + x49 + x12 + x42 + x27 + x28 + x37 + x7 + x46 + x40 + x41 + x38 + x32 + x6 + x2)
+
+# training NNET model
+train(y ~ x23 + x20 + x48 + x49 + x12 + x42 + x27 + x28 + x37 + x7 + x46 + x40 + x41 + x38 + x32 + x6 + x2,
+  data = final_train.df,
+  method = "nnet",
+  metric = "Accuracy",  # "ROC", 
+  trControl = final_nnet.grid, 
+  num.threads = (detectCores() - 1),
+  preProcess = "scale",
+  tuneGrid = nn.grid
+) -> final_train.nnet
+
+
+### SHUTDOWN CLUSTER
+stopCluster(cluster)
+#registerDoSEQ()
+
+```
+
+
+
+Fitting final model on full training set
+# weights:  191
+initial  value 98472.217440 
+iter  10 value 61837.427371
+iter  20 value 52422.020358
+iter  30 value 49565.718838
+iter  40 value 47732.724175
+iter  50 value 46722.513900
+iter  60 value 45675.399414
+iter  70 value 44759.151981
+iter  80 value 44020.367373
+iter  90 value 42846.954021
+iter 100 value 41924.521176
+final  value 41924.521176 
+stopped after 100 iterations
+
+
+
+
+
+### Evaluating model with test predictions
+
+```{r}
+# predictions
+predict(final_train.nnet, final_test.df) -> final_nnet.pred
+```
+
+
+
+**AUC and RMSE**
+
+Not quite as good as untuned Random Forest
+ 
+"AUC Value for this model is "
+0.8588666
+"RMSE Value for this model is "
+0.3652111
+
+
+```{r}
+# AUC plot
+# NOTE: must convert values to numeric to use function
+performance(
+  ROCR::prediction( 
+    as.numeric(final_nnet.pred), 
+    as.numeric(final_test.df$y) 
+    ),
+  measure = "tpr",
+  x.measure = "fpr"
+) -> final_nnet.perf 
+plot(final_nnet.perf)
+
+# AUC value
+print("AUC Value for this model is ")
+performance(
+  ROCR::prediction( 
+    as.numeric(final_nnet.pred), 
+    as.numeric(final_test.df$y) 
+    ),
+  measure = "auc",
+  )@y.values[[1]] 
+
+# RMSE
+print("RMSE Value for this model is ")
+RMSE( as.numeric(final_nnet.pred), as.numeric(final_test.df$y) )
+```
+
+
+
+
+**Confusion Matrix**
+
+Somewhat less performant than untuned Random Forest
+
+Accuracy : 0.8666
+Sensitivity : 0.8196
+Specificity : 0.8981
+
+
+```{r}
+# confusion matrix
+caret::confusionMatrix(
+  data = relevel(final_nnet.pred, ref = "1"),
+  reference = relevel(final_test.df$y, ref = "1")
+)
+```
+
+
+
+
+
