@@ -19,7 +19,7 @@ library(reshape2) #wide / long for visualization
 library(corrplot) # visualisation
 library(VIM) # missing values
 #library(vip)
-library(car) # modeling
+#library(car) # modeling
 library(caret) # model training & hyperparameter tuning
 library(ROCR) # model validation
 library(MASS) # model validation
@@ -232,7 +232,7 @@ Note: For the caret package to properly process the randomforest, the response m
 
 
 ```{r}
-# OPTIONAL: CATEGORIZE Y 
+# CATEGORIZE Y 
 final_msub.df <- final_msub.df %>% mutate(y = factor(y) )
 
 ```
@@ -410,24 +410,20 @@ caret::confusionMatrix(
 
 
 
-
-
-
-
-
-
-
-
-
 **TUNING RANDOM FOREST ALGORITHM**
 
 
-Random forest standard splitting rule is biased when predictor variables vary in their scale. This also has a substantial impact on the variable importance. In the case of the Gini variable importance,predictor variables with many categories or numerical values receive on average a higher variable importance than binaryvariables if both variables have no influence on the outcome variable. The permutation variable importance remainsunbiased in these cases, but there is a higher variance of the variable importance for variables with many categories
+Random forest standard splitting rule is biased when predictor variables vary in their scale. This also has a substantial impact on the variable importance. In the case of the Gini variable importance,predictor variables with many categories or numerical values receive on average a higher variable importance than binary variables if both variables have no influence on the outcome variable. The permutation variable importance remains unbiased in these cases, but there is a higher variance of the variable importance for variables with many categories
 
 Higher mtry values lead to lower variable importance of weak regressors. The values of the variable importance from the standard random forest were far less dependent on mtry than the ones from the conditional inference forests. This was due to the much larger size (i.e., number of splits untilthe terminal node) of individual trees in the standard random forest. 
 
 Decreasing the tree size (for example by setting a higher node size value) while setting mtry to a small value leads to more equal values of the variable importances of all variables, because there was less chance that relevant variables were chosen in the splitting procedure
 
+We are trying to predict the '1' values thus we optimize for Sensitivity, predicting positive outcomes, over Accuracy. sensitivity
+
+prSummary = c('AUC', 'Precision', 'Recall' )
+
+**11 Hour Runtime**
 
 ```{r}
 
@@ -439,9 +435,10 @@ registerDoParallel(cluster)
 
 # training grid
 trainControl(
-  method = "oob", 
-# summaryFunction = twoClassSummary, 
-  savePredictions = T, 
+  method = "cv",
+  number = 5,
+  summaryFunction = twoClassSummary, 
+  savePredictions = "final", 
   classProbs = F, 
   verboseIter = T,
   search = "random",
@@ -450,7 +447,10 @@ trainControl(
 
 # tuning grid
 
-final_tune.grid <- expand.grid( mtry = c(5,6,7), splitrule = "gini", min.node.size = c(1,2,3) )
+final_tune.grid <- expand.grid( 
+  mtry = c(5,7,9), 
+  splitrule = c( "gini", "extratrees", "hellinger"), 
+  min.node.size = c(1,2) )
 
 # training RF model
 train(
@@ -459,10 +459,10 @@ train(
   method = "ranger",
   trControl = final_caret.grid, 
   num.threads = (detectCores() - 1),
-#  preProcess = c("scale","center"),
+  preProcess = c("scale","center"),
   tuneGrid = final_tune.grid,
   importance = 'permutation', #'impurity',
-  metric = "Accuracy"
+  metric = "Sens" # "Accuracy"
 ) -> final_train.caret
 
 
@@ -471,6 +471,8 @@ stopCluster(cluster)
 #registerDoSEQ()
 
 ```
+
+
 
 **Hyperparameter Tuning**
 
@@ -486,18 +488,34 @@ Here however the functionality of looping through the **mtry** values of 5,6, an
 * mtry: sqrt(# of predictors) ~7 in this case
 * min.node.size: 1 for classification
 
+**Permutation vs Gini**
+
+https://www.r-bloggers.com/be-aware-of-bias-in-rf-variable-importance-metrics/
+
+Impurity importance can be calculated fast, however it has been shown to be biased in favor of continuous and high cardinality variables. Each time a break point is selected in a variable, every level of the variable is tested to find the best break point. Continuous or high cardinality variables will have many more split points, which results in the “multiple testing” problem. That is, there is a higher probability that by chance that variable happens to predict the outcome well, since variables where more splits are tried will appear more often in the tree.
+
+Permutation importance is more reliable, albeit more computationally expensive than mean decrease in impurity. The basic idea is to consider a variable important if it has a positive effect on the prediction accuracy (classification), or MSE (regression). This metric is applicable to any model, not just random forests. The risk of using this metric is a potential bias towards collinear predictive variables.
+
+
+
 
 **Final Model**
+
+Ranger result
+
+Call:
+ ranger::ranger(dependent.variable.name = ".outcome", data = x,      mtry = min(param$mtry, ncol(x)), min.node.size = param$min.node.size,      splitrule = as.character(param$splitrule), write.forest = TRUE,      probability = classProbs, ...) 
 
 Type:                             Classification 
 Number of trees:                  500 
 Sample size:                      128001 
 Number of independent variables:  67 
-Mtry:                             7 
-Target node size:                 2 
-Variable importance mode:         permutation 
-Splitrule:                        gini 
-OOB prediction error:             7.91 % 
+Mtry:                             **5** 
+Target node size:                 **2** 
+Variable importance mode:         **permutation**
+Splitrule:                        **extratrees** 
+Number of random splits:          1 
+OOB prediction error:             11.28 % 
 
 
 ```{r}
@@ -513,8 +531,8 @@ final_train.caret$finalModel
 ### Evaluating model with test predictions
 
 Make predictions w/ best model
-* mtry: 7
-* splitrule: gini
+* mtry: 5
+* splitrule: extra trees
 * min.node.size: 2
 
 
@@ -527,10 +545,12 @@ predict(final_train.caret, final_test.df) -> final_caret.pred
 
 **AUC and RMSE**
 
+AUC went down significantly to 87.43%
+
 "AUC Value for this model is "
-0.9140067
+0.8743373
 "RMSE Value for this model is "
-0.2782803
+0.3303932
 
 
 ```{r}
@@ -564,10 +584,11 @@ RMSE( as.numeric(final_caret.pred),
 
 Note: to assure an accurate confusion matrix we explicity specify 1 as the reference, as opposed to letting the software randomly decide.
 
+Overall our model **Accuracy** went down slightly, however our **Specificity** jumped up to 95.8%
 
-Accuracy : 0.9226
-Sensitivity : 0.8707
-Specificity : 0.9573
+Accuracy : 0.8908
+Sensitivity : 0.7908          
+Specificity : **0.9579** 
 
 
 ```{r}
