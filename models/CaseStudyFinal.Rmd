@@ -1,0 +1,384 @@
+---
+title: "DS7333 Final Case Study"
+author: "Christian Nava, Jeremy Otsap, Martin Garcia, Michael Catalano, "
+date: "8/1/2020"
+output:
+  rmdformats::readthedown:
+    highlight: kate
+---
+
+
+```{r setup, include=FALSE}
+
+library(rmdformats)    # for html formattinglibrary(tidyverse) # data wrangling
+library(tidyverse)     # data manipulaiton
+library(modelr)        # factor manipulation
+library(skimr)         # data exploration
+library(na.tools)      # for mean imputation
+library(ggplot2)       # visualization
+library(reshape2)      # wide / long for visualization
+library(corrplot)      # visualisation
+library(VIM)           # missing values
+#library(vip)
+#library(car) # modeling
+library(glmnet)        # logistic regression
+library(caret)         # model training & hyperparameter tuning
+library(ROCR)          # model validation
+library(MASS)          # model validation
+library(ranger)        # modeling Random Forest
+library(e1071)         # modeling Random Forest tuning
+library(neuralnet)     # forward feed neural net
+
+knitr::opts_chunk$set(echo = TRUE,
+               prompt = FALSE,
+               tidy = TRUE,
+               comment = NA,
+               message = FALSE,
+               warning = FALSE)
+```
+
+***
+# Cost Analysis of an Unknown Dataset
+***
+Martin Garcia, Michael Catalano, Jeremy Otsap, Christian Nava  
+August 12, 2020  
+
+
+## Introduction
+***
+
+We have been presented with a dataset of 160,000 rows and 51 columns. The columns are labeled y, and x0 through x49. The objective is to predict the values of the target variable, y, which has values of 0 and 1. False positives have a cost of \$10 each and false negatives have a cost of \$500 each. True positives and true negatives have a cost of $0.
+
+
+```{r}
+# loading data file from Azure Blob Storage as it exceeds the size threshold for github
+final.df <- read.csv("https://modisdatawu2sqlml01.blob.core.windows.net/smu-data/ds7333/final_project.csv", header = T)
+```
+
+
+```{r}
+#examine data
+str(final.df)
+summary(final.df)
+```
+
+
+## Data Munging
+
+An initial review of the data reveals all but five variables are numeric. The remaining variables are categorical and can be most aptly described or labled as country (x24), month (x29), day_of_the_week (x30). Variables x30 and x37 appear to be a percentage change and a dollar amount, respectively. These are being mislabeled as factor variables due to the $ and % characters. In order to correctly analyze these columns we converted these to numeric values.
+
+```{r}
+# convert percentage factor to numeric
+as.numeric(gsub("\\%","",final.df$x32)) -> final.df$x32
+
+# convert dollar factor to numeric
+as.numeric(gsub("\\$","",final.df$x37)) -> final.df$x37
+
+# validate x32 and x37 are now numeric
+str(final.df[,c(33,38)])
+```
+
+## Missing Data: Imputation Method
+
+We find that all columns except for the categorial columns have observations with missing values.
+
+```{r}
+# check variables for missing values
+sapply(final.df, function(x) sum(is.na(x))) 
+```
+
+A visualizaiton of the missing data shows that each column has its own unique set of missing values, which do not align to other columns/parameters. Dropping rows with missing variables, or using listwise deletion, would delete an entire row for that column's one missing value. 
+
+```{r}
+# visualize missing data
+aggr(final.df, 
+     prop = FALSE, 
+     combined = TRUE, 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     sortCombs = TRUE)
+```
+
+
+### Listwise Deletion
+
+Given that many variables have observations with missing values, a listwise deletion approach would maximize data loss, resulting in 1,466 deleted rows, or approximately 0.95% data loss.
+```{r}
+# output number of missing rows
+print("total number of deleted rows: ")
+print(dim(final.df)[1] - dim(na.omit(final.df))[1] )
+
+# apply listwise deletion to new dataframe
+final_impute.df <- na.omit(final.df)
+
+print( "The percentage difference for listwise deletion is: "  )
+print( (nrow(final.df)-nrow(final_impute.df))/nrow(final.df) )
+```
+
+
+
+### Final Imputation Approach
+
+Wee used a hybrid approach of mean substituion and listwise deletion for data imputation. Missing categorical observations would be dropped and missing numerical values would be replaced with the mean value of the variable.
+
+We confirmed there were no missing values on the categorical columns x24, x29, and x30, which do not require an imputation method.
+
+```{r}
+# output number of remaining rows after applying listwise deletion
+print("total number of missing rows in X24: ")
+sum(is.na(final.df$x24))
+
+print("total number of missing rows in X29: ")
+sum(is.na(final.df$x29))
+
+print("total number of missing rows in X30: ")
+sum(is.na(final.df$x30))
+```
+
+
+
+We than used mean subsitutionn for the missing numerical values.
+
+```{r}
+# create new dataframe
+final.df -> final_msub.df
+
+# loop through na.mean
+loop_length <- length(final_msub.df)
+
+for (i in c(1:24,26:29,32:51) ) {
+  na.mean(final_msub.df[,i]) -> final_msub.df[,i]
+  i = i + 1
+}
+
+```
+
+
+We then verified new imputed dataframe had no missing values and the factor data types had not changed.
+
+```{r}
+# verify x24, x29, and x30 are still categorical
+str(final_msub.df[,c(25, 30, 31)])
+
+# verify all missing values have been imputd
+sapply(final_msub.df, function(x) sum(is.na(x))) 
+```
+
+A visualization of the data gives us additional confirmation of that the missing data has been replaced.
+```{r}
+# visualize missing data
+aggr(final_msub.df, 
+     prop = FALSE, 
+     combined = TRUE, 
+     numbers = TRUE, 
+     sortVars = TRUE, 
+     sortCombs = TRUE)
+```
+
+
+## Data Visualization
+
+Using a box plot of each variable, we can see that variable x37 has a much larger range than the other variables. Variable x37 was a dollar ammount. 
+```{r, echo=FALSE}
+
+ggplot(data = melt(final_msub.df), aes(x=variable, y=value)) + geom_boxplot(aes(fill=variable)) + coord_flip()
+```
+
+To bring this variable's value within range of the other variables we can perform scaling and centering, or we can divide by 1,000 to represent thousands of dollars. We chose to divide variable x37's value by 1,000.
+```{r}
+# compare range of x37 raw and divided by 1000
+summary(final_msub.df$x37)
+summary((final_msub.df$x37)/1000)
+
+```
+
+The data has now been prepared for modeling and analysis.
+
+## Performance Metric: AUC Score
+
+The metric used for this project is the area under the Receiver Operating Characteristic curve (AUC). The Receiver Operating Characteristic curve (ROC) graphs the performance of a classification model at all classification thresholds; it plots the true positive rate (TPR) against the false positive rate (FPR) as shown in Figure 1.
+
+<h4 align="center">Figure 1: Area Under the Reciever Operating Curve</h4> 
+
+<center>
+<img src="https://marlin-prod.literatumonline.com/cms/attachment/34661288-1f8f-459e-b8b4-936efc49e9bc/fx1_lrg.jpg" style="width:350px;height:300px"/>
+<center>
+
+<h4 align="center">Source: [Journal of Thoracic and Cardiovascular Surgery](https://www.jtcvs.org/article/S0022-5223(18)32875-7/fulltext)
+
+Each curve represents the graph of a single model. Movement along the curve indicates changing the threshold used for classifying a positive instance. The area under the ROC curve measures the two-dimensional area under the ROC curve and is given by the integral of the curve, or the area under the curve (AUC): $$AUC = \int_{0}^{1}TPR(x)dx = \int_{0}^{1}P(A>\tau (x))dx$$
+
+where $x$ is the false positive rate and $A$ is the distribution of scores the model produces for data points that are actually in the positive class.
+
+This metric is measured between 0 and 1. A higher score indicates a better model. Visually, a superior model will graph as a curve above and to the left of another curve. A straight diagonal line beginning at 0 on the bottom left and ending at 1 on the top right indicates a naive model (random guessing).
+
+
+## Outline of Approach
+A logistic regression model was used as a baseline, or benchmark, model and the results were then compared to those from an untuned random forest model, a tuned random forest model,  and a feed-forward neural network model, and a feed-forward neural network model using the most important variables as per the random forest model. 
+
+
+## Model Baseline: Logistic Regression
+
+Note: For the caret package to properly process binomial classification models, the response must be categorical binary.
+
+```{r}
+
+# categorize y 
+final_msub.df <- final_msub.df %>% mutate(y = factor(y) )
+
+```
+
+We begin by creating a training and test set. There is a slight imbalance in the response variable, and we want to ensure that the sampled proportion of positive and negative classes in the data set is represented in the training and test sets. 
+
+
+```{r}
+# plot classes for y variable
+#final.df %>% 
+ # ggplot(aes(x=y)) + 
+  #geom_col()
+```
+
+The `caret` package automatically does this by splitting the sample into groups sections based on percentiles and sampling is done within these subgroups.
+
+```{r}
+set.seed(123)
+# creating the 80 data partition 
+final_split <- createDataPartition(final_msub.df$y, p = 0.8, list = F)
+# including 80 for training set
+final_train.df <- final_msub.df[final_split,] 
+# excluding 80 for testing set
+final_test.df <- final_msub.df[-final_split,]
+# validating
+dim(final_test.df)
+dim(final_train.df)
+
+```
+
+Here confirm that the ratio of postive and negative classes in the response variable is maintained the the sample for the training and test sets. The ratio positive (1) to negative (0) classes for the entire dataset is 64,197 / 95,803 = 0.6700. For the test set the ratio is 12,814 / 19,186 = 0.6678 and the ratio for the training set is 51,383 / 76,617 = 0.6704. 
+```{r}
+# compare level split of main data frame
+table(final_msub.df$y)
+
+# validating sample maintained ratio for response levels
+table(final_test.df$y)
+table(final_train.df$y)
+
+```
+
+
+### Baseline Model
+
+For the baseline model, we did not tune any hyperparameters or perform feature selection.
+
+```{r}
+# create logistic regression model on train data
+# R will automatically create dummy variables on factors
+ptm <- proc.time()
+final_train.logit <- glm(y ~ ., data = final_train.df, family = binomial("logit") )
+summary(final_train.logit)
+proc.time() - ptm
+
+```
+
+
+Visualizing the coefficients of the full logistic model, we can see the most influential variables are <code style="background:yellow;color:black">the type of Internet Service and the type of contract</code>, which were included in significant factors above
+
+```{r}
+# visualize coefficients
+as.data.frame(final_train.logit$coefficients) %>% ggplot(aes(y = .[,1], x = rownames(.)) ) + geom_col() + theme( axis.text = element_text(angle = 90, size = rel(0.7)) )
+# standard graphics alternative
+# barplot( final_train.logit$coefficients, names.arg = F, col = rainbow(31), legend.text = names(final_train.logit$coefficient) )
+```
+
+
+
+#### ROC Curve for Full Logistic Model
+
+We validate the accuracy of our model on the test data set by looking at a AUC score for the model. The AUC is 0.7608
+
+
+```{r}
+# create predictions
+predict(
+  final_train.logit, 
+  newdata = final_test.df,
+  type = "response"
+  ) -> final_logit.pred
+
+# ROC curve
+performance(
+  ROCR::prediction(final_logit.pred, final_test.df$y),
+  measure = "tpr",
+  x.measure = "fpr"
+) -> final_logit.perf 
+
+plot(final_logit.perf)
+
+# AUC value
+print("AUC Value for this model is ")
+performance(
+  ROCR::prediction(final_logit.pred, final_test.df$y),
+  measure = "auc"
+)@y.values[[1]]
+```
+
+
+
+
+#### Confusion Matrix
+
+To ensure we correctly interpret the confusion matrix we explicity specify 1 as the reference. Additionally, we coerced the probabilities to either be 1 or 0 based on a 50% threshold. The confusion matrix will let us know how many observations were correctly classified as either 0 or 1. It will also indicate how many obervations were incorrectly classified as positives (false positives) and how many were incorrectly classified as negatives (false negatives)
+
+```{r}
+# split into "1" and "0" factors based on 0.5 thresdshold
+as.numeric(final_logit.pred > 0.5 ) %>% as.factor() -> final_logit_factor.pred
+
+```
+
+
+From the confusion matrix we can see that the logistic model has 6,101 false negatives and 3,372 false positives
+
+A specificity of .82 and sensitivity of 0.52 indicates that this model does a better job of predicting the 0-class and has almost a 50-50 probability of predicting the 1-classs.
+
+Confusion Matrix and Statistics
+
+          Reference
+Prediction     1     0
+         1  6738  3372
+         0  6101 15788
+
+Accuracy : 0.704 
+Sensitivity : 0.5248 
+Specificity : 0.8240
+
+
+False Positive costs = $10 * 6101
+False Negative costs = $500 * 3372
+
+**TOTAL COST: $1,747,010**
+
+
+
+
+```{r}
+# confusion matrix
+caret::confusionMatrix(
+  data = relevel(final_logit_factor.pred, ref = "1"),
+  reference = relevel(final_test.df$y , ref = "1")
+)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
