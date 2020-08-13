@@ -63,9 +63,9 @@ summary(final.df)
 ```
 
 
-## Data Munging
+## Data Exploration
 
-An initial review of the data reveals all but five variables are numeric. The remaining variables are categorical and can be most aptly described or labled as country (x24), month (x29), day_of_the_week (x30). Variables x30 and x37 appear to be a percentage change and a dollar amount, respectively. These are being mislabeled as factor variables due to the $ and % characters. In order to correctly analyze these columns we converted these to numeric values.
+An initial review of the data reveals all but five variables are numeric. The remaining variables are categorical and can be most aptly described or labled as country (x24), month (x29), day_of_the_week (x30). Variables x32 and x37 appear to be a percentage change and a dollar amount, respectively. These are being mislabeled as factor variables due to the $ and % characters. In order to correctly analyze these columns we converted these to numeric values.
 
 ```{r}
 # convert percentage factor to numeric
@@ -77,6 +77,41 @@ as.numeric(gsub("\\$","",final.df$x37)) -> final.df$x37
 # validate x32 and x37 are now numeric
 str(final.df[,c(33,38)])
 ```
+
+We used PowerBI to perform some data exploration and get a sense of the data. We found that the response variable is sensitive to summer months as can be seen in Figure 1.
+
+<h4 align="center">Figure 1: Percent Change by Month</h4>  
+
+<center>
+![Figure 1](POWER_BI_y_by_month.png)
+</center>  
+
+
+Additionally, most of the dollar value appears to come from Europe as can be seen in Figure 2. Whether that dollar value is an expense or revenue is unclear.  
+
+<h4 align="center">Figure 2: Dollars by Country</h4> 
+
+<center>
+![Figure 2](POWER_BI_dollars_by_country.png)
+</center>
+
+
+When we look at percent change by country, we see the largest percent change comes from Europe as shown is Figure 3. 
+
+<h4 align="center">Figure 3: Percent Change by Country</h4> 
+
+<center>
+![Figure 4](POWER_BI_pct_change_by_country.png)
+</center>  
+
+Also, the largest percentage changes tend to occur during the summer months as shown in Figure 4.  
+
+
+<center>
+![Figure 4](POWER_BI_pct_change_by_month.png)
+</center>
+
+An initial inspection leads us to believe variable x37, which is a dollar amount, may be an influential variable.
 
 ## Missing Data: Imputation Method
 
@@ -429,18 +464,17 @@ final_train.rf$importance.mode
 ```
 
 
-#### Evaluating model with test predictions
+
+The random forest model shows an improvement on the baseline logistic regression model in terms of AUC score. The random forest model has an AUC score of 0.920 compared to an AUC score of 0.761 for the logistic regression model.
+
 ```{r}
 # predictions
 predict(
   final_train.rf,
   data = final_test.df,
   ) -> final_forest.pred
-```
 
-The random forest model shows an improvement on the baseline logistic regression model in terms of AUC score. The random forest model has an AUC score of 0.920 compared to an AUC score of 0.761 for the logistic regression model.
 
-```{r}
 # AUC plot
 # NOTE: must convert values to numeric to use function
 performance(
@@ -474,7 +508,7 @@ caret::confusionMatrix(
 
 When we look at the variable importance plot, which tells us which variables have the largest effect on the model, we see that variables x23, x49, x20, x48, x42, x37, x12, x40, x27, x6, x2, x28, x41, x38, x7, x46, and x32 have the highest importance.
 
-```{r}
+```{r fig.height=10,fig.width=10}
 # variable importance plot
 final_ranger_imp.df <- as.data.frame(final_train.rf$variable.importance)
 
@@ -489,7 +523,7 @@ ggplot(final_ranger_imp.df, aes(x=reorder(x_label,x_value), y=x_value,fill=x_val
 
 ```
 
-Given the output of our initial `ranger` random forest model, we can limit to variables found to have the highest importance:
+
 
 ## Model 3: Tuned Random Forest Model
 
@@ -577,7 +611,7 @@ final_train.caret$finalModel
 predict(final_train.caret, final_test.df) -> final_caret.pred
 ```
 
-The AUC score for the tuned random forest model  is 0.8933556.
+The AUC score for the tuned random forest model is 0.8933556.
 
 
 ```{r}
@@ -603,7 +637,6 @@ performance(
 ```
 
 
-
 Per the confusion matrix, the tuned random forest model yielded 2,201 false negatives and 802 false positives, for a total cost of \$1,108,520. Specifity is 0.9581, which implies that it is correctly classifying the negative class 95.81% of the time.
 
 ```{r}
@@ -615,13 +648,9 @@ caret::confusionMatrix(
 ```
 
 
-
-
-**Variable Importance & Impurity**
-
 The variable importance plot for the tuned random forest model shows that the top ___ most important variables are: 
 
-```{r}
+```{r fig.height=10,fig.width=10}
 
 # sexier importance plot
 final_caret_imp.df <- as.data.frame(final_train.caret$finalModel$variable.importance)
@@ -643,8 +672,6 @@ ggplot(final_caret_imp.df, aes(x=reorder(x_label,x_value), y=x_value,fill=x_valu
 
 
 ## Model 4: Forward Feed Neural Network (FFNN)
-
-
 
 ```{r}
 
@@ -700,25 +727,12 @@ stopCluster(cluster)
 ```
 
 
-
-
-### Evaluating model with test predictions
+The AUC score for the FFNN model model is 0.8287071, which is less desirable than either of the two random forest models above.
 
 ```{r}
 # predictions
 predict(full_train.nnet, final_test.df) -> full_nnet.pred
-```
 
-
-**AUC and RMSE**
-
-Not quite as good as untuned Random Forest
- 
-[1] "AUC Value for this model is "
-[1] 0.8326069
-
-
-```{r}
 # AUC plot
 # NOTE: must convert values to numeric to use function
 performance(
@@ -742,8 +756,6 @@ performance(
   )@y.values[[1]] 
 ```
 
-
-
 Per the confusion matrix, the FFNN model yielded 2,614 false negatives and 2,663 false positives, for a total cost of \$1,333,630.
 
 ```{r}
@@ -755,9 +767,7 @@ caret::confusionMatrix(
 ```
 
 
-
-## Model 5: Forward Feed Neural Net - Important Variables
-
+## Model 5: Forward Feed Neural Network - Important Variables
 
 For this variation of the FFNN model we used only the most important variables as per the `ranger` random forest model.
 
@@ -811,7 +821,6 @@ stopCluster(cluster)
 
 ```
 
-
 The AUC score for the FFNN model with important variables is 0.8469703.
 
 ```{r}
@@ -841,8 +850,6 @@ performance(
   )@y.values[[1]] 
 
 ```
-
-
 
 Per the confusion matrix, the FFNN model using the most important variables yielded 2,529 false negatives and 2,090 false positives, for a total cost of \$1,285,400, which is a $48,200 improvement over the full FFNN model.
 
