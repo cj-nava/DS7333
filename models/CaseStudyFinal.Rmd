@@ -282,21 +282,18 @@ proc.time() - ptm
 ```
 
 
-Visualizing the coefficients of the full logistic model, we can see the most influential variables are <code style="background:yellow;color:black">the type of Internet Service and the type of contract</code>, which were included in significant factors above
+Visualizing the coefficients of the full logistic model, we can see the most influential variables are x32, x29January, and x24america.
 
-```{r}
+
+```{r fig.height=10,fig.width=8}
 # visualize coefficients
-as.data.frame(final_train.logit$coefficients) %>% ggplot(aes(y = .[,1], x = rownames(.)) ) + geom_col() + theme( axis.text = element_text(angle = 90, size = rel(0.7)) )
-# standard graphics alternative
-# barplot( final_train.logit$coefficients, names.arg = F, col = rainbow(31), legend.text = names(final_train.logit$coefficient) )
+as.data.frame(final_train.logit$coefficients) %>% 
+  ggplot(aes(y = .[,1], x = rownames(.)) ) + geom_bar(stat = 'identity') + coord_flip() + ylab("Importance") + xlab("") + ggtitle("Variable Importance") + guides(fill=F) + scale_fill_gradient(low="gray", high="blue")
 ```
-
-
 
 #### ROC Curve for Full Logistic Model
 
-We validate the accuracy of our model on the test data set by looking at a AUC score for the model. The AUC is 0.7608
-
+We validate the accuracy of our model on the test data set by looking at a AUC score for the model. The AUC is 0.7608, which is a better benchmark that random guessing or luck (AUC = 0.50).
 
 ```{r}
 # create predictions
@@ -324,11 +321,9 @@ performance(
 ```
 
 
-
-
 #### Confusion Matrix
 
-To ensure we correctly interpret the confusion matrix we explicity specify 1 as the reference. Additionally, we coerced the probabilities to either be 1 or 0 based on a 50% threshold. The confusion matrix will let us know how many observations were correctly classified as either 0 or 1. It will also indicate how many obervations were incorrectly classified as positives (false positives) and how many were incorrectly classified as negatives (false negatives)
+To ensure we correctly interpret the confusion matrix we explicity specify 1 as the reference and positive class. Additionally, we coerced the probabilities to either be 1 or 0 based on a 50% threshold. The confusion matrix will let us know how many observations were correctly classified as either 0 or 1. It will also indicate how many obervations were incorrectly classified as positives (false positives) and how many were incorrectly classified as negatives (false negatives).
 
 ```{r}
 # split into "1" and "0" factors based on 0.5 thresdshold
@@ -337,9 +332,9 @@ as.numeric(final_logit.pred > 0.5 ) %>% as.factor() -> final_logit_factor.pred
 ```
 
 
-From the confusion matrix we can see that the logistic model has 6,135 false negatives and 3,372 false positives.
+From the confusion matrix we can see that the logistic model has 6,135 false negatives and 3,372 false positives. Since each false positive incurrs a cost of \$10 and each false negative costs \$500, the total cost of false positives and false negatives is \$3,101,220 for the baseline model.
 
-A specificity of .82 and sensitivity of 0.52 indicates that this model does a better job of predicting the 0-class and has almost a 50-50 probability of predicting the 1-classs.
+A specificity of 0.82 and sensitivity of 0.52 indicates that this model does a better job of predicting the 0, the negative class, and has almost a 50-50 probability of predicting 1, the positive class.
 
 ```{r}
 # confusion matrix
@@ -466,7 +461,7 @@ performance(
 ```
 
 
-The confusion matrix for the random forest model shows 786 false positives yeilding a cost of \$7,860 and 1,515 false negatives yeilding a cost of \$757,500 or a total cost of \$765,360. Additionally, we can see there was a significant improvement in the sensitivity and specificity scores.
+The confusion matrix for the random forest model shows 786 false positives yeilding a cost of \$7,860 and 1,515 false negatives yeilding a cost of \$757,500 or a total cost of \$765,360. Additionally, we can see there was a significant improvement in the sensitivity and specificity scores, implying this model does a better job of predicting both the positve and negative classes than the logistic regression model.
 
 ```{r}
 # confusion matrix
@@ -477,13 +472,9 @@ caret::confusionMatrix(
 ```
 
 
-
-
 When we look at the variable importance plot, which tells us which variables have the largest effect on the model, we see that variables x23, x49, x20, x48, x42, x37, x12, x40, x27, x6, x2, x28, x41, x38, x7, x46, and x32 have the highest importance.
 
-Given the output of our initial ranger random forest model, we can limit to variables found to have the highest importance:
 ```{r}
-
 # variable importance plot
 final_ranger_imp.df <- as.data.frame(final_train.rf$variable.importance)
 
@@ -498,77 +489,38 @@ ggplot(final_ranger_imp.df, aes(x=reorder(x_label,x_value), y=x_value,fill=x_val
 
 ```
 
+Given the output of our initial `ranger` random forest model, we can limit to variables found to have the highest importance:
 
 ## Model 3: Tuned Random Forest Model
 
-**NOTE: DO NOT RUN - 11 Hour Runtime **
-
-I'll put my notes here and then will notate the CORRECT model to run which already has the optimized tuning grid
-
-------
-
-**Hyperparameter Tuning**
-
-As per above, there are a number of hyperparameters that can be optimized to improve model performance. We use Caret as the training engine to optimize Ranger's hyperparameters as well as executing the 5 fold cross validation and normalizing the data 
+As per above, there are a number of hyperparameters that can be optimized to improve model performance. We use `caret` as the training engine to optimize Ranger's hyperparameters as well as executing the 5-fold cross-validation and normalizing the data.
 
 We set the tuning grid as follows
 * attempt **mtry** values of 5,6, and 7
 * attempt **min.node.size** values of 1 and 2
 * attempt all 3 different types of **splitrule** values: "gini", "extratrees", "hellinger" Additionally 
-Given the higher cost of False Negatives we set the target **metric** to Specificity, rather than the default Accuracy. 
 
-*Specificity* is essentially how well the model predicts True Negatives. I.e. the ability of the model to correctly identify those without cancer. In other words of the ACTUAL healthy patients, how many were accurately PREDICTED to NOT have cancer
+Given the higher cost of false negatives we set the target metric to specificity, rather than the default, accuracy. Specificity measures a model's abilty to predict true negatives, i.e., when the class is actually negative, how often does the model correctly identify the negative class?  If the model was attempting to correctly identify those without cancer, how often did it correctly predict that a patient did not have cancer?
 
+We also set the importance from the default impurity to permutation. Permutation importance is more reliable, albeit more computationally expensive than mean decrease in impurity. The basic idea is to consider a variable important if it has a positive effect on the prediction accuracy (classification), or MSE (regression). This metric is applicable to any model, not just random forests. The risk of using this metric is a potential bias towards collinear predictive variables.
 
-
-We also set the importance from the default impurity to permutation [see note below on Gini vs Permutation]
-
-
-**Improving Processing Time**
-
-In addition to using the Ranger algorithm, having Caret run the model training allows us to use multiple CPU's in parallel via the allowParallel field.
-
-Also will reduce Number of trees to 300 from default of 500
-
-Using a Random Search over a Grid Search can help improve performance. In Grid Search, Caret sets up a grid of hyperparameter values and for each combination, trains a model and scores on the testing data. Conversely, using a random search sets up a grid of hyperparameter values and selects random combinations to train and score the model
-
-
-All of these factors resulted in an **11 hour runtime**
-
-
-------
-
-#### Splitrule: Hellinger
-
-Note: this is ONLY for **binary** classification with level imbalances, thus we do NOT use in our final tuning grid
-
-When working with imbalanced data, the minority class has a considerably smaller representation in the data. We want to take this fact into consideration when choosing the best split of a decision tree model. The commonly used scorers for split decision are Gini and Entropy. Both favor splits which result in an uneven class distribution (e.g. 90–10) over splits which lead to an even distribution of classes (e.g. 50–50). This is a major problem, take for example an imbalanced data set with 90–10 class balance. A split which will produce 90–10 class balance in the children population does not improve the class separation in any way but gets high Gini and Entropy scores. Hellinger Distance based split, will give high score to a split separating the classes in the best way relative to the parent population. Thus, in a population with 80–20 class balance, a split producing 80–20 split will get low score 50–50 split will get a high score
-
-#### Permutation vs Gini
-
-Impurity importance can be calculated fast, however it has been shown to be biased in favor of continuous and high cardinality variables. Each time a break point is selected in a variable, every level of the variable is tested to find the best break point. Continuous or high cardinality variables will have many more split points, which results in the “multiple testing” problem. That is, there is a higher probability that by chance that variable happens to predict the outcome well, since variables where more splits are tried will appear more often in the tree.
-
-Permutation importance is more reliable, albeit more computationally expensive than mean decrease in impurity. The basic idea is to consider a variable important if it has a positive effect on the prediction accuracy (classification), or MSE (regression). This metric is applicable to any model, not just random forests. The risk of using this metric is a potential bias towards collinear predictive variables.
-
-Random forest standard splitting rule is biased when predictor variables vary in their scale. This also has a substantial impact on the variable importance. In the case of the Gini variable importance, predictor variables with many categories or numerical values receive on average a higher variable importance than binary variables if both variables have no influence on the outcome variable. The permutation variable importance remains unbiased in these cases, but there is a higher variance of the variable importance for variables with many categories
-
-Higher mtry values lead to lower variable importance of weak regressors. The values of the variable importance from the standard random forest were far less dependent on mtry than the ones from the conditional inference forests. This was due to the much larger size (i.e., number of splits untilthe terminal node) of individual trees in the standard random forest. 
-
-Decreasing the tree size (for example by setting a higher node size value) while setting mtry to a small value leads to more equal values of the variable importances of all variables, because there was less chance that relevant variables were chosen in the splitting procedure
-
+Also reduced the number of trees to 300 from default of 500.
 
 
 ```{r}
 
-########################
-### USE THIS INSTEAD ###
-########################
+#################################
+### TUNED RANDOM FOREST MODEL ###
+#################################
 
 # cluster preparation for parallel CPU
 library(parallel)
 library(doParallel)
 cluster <- makeCluster(detectCores() - 1) # leave 1 core for OS
 registerDoParallel(cluster)
+
+# start timer to check how long code takes to run
+ptm <- proc.time()
 
 # training grid
 trainControl(
@@ -603,13 +555,12 @@ train(
   metric = "Spec" # "Accuracy" or "Sens"
 ) -> final_train.caret
 
+# end timer
+proc.time() - ptm
 
 ### SHUTDOWN CLUSTER
 stopCluster(cluster)
 #registerDoSEQ()
-
-
-
 
 ```
 
@@ -618,17 +569,42 @@ stopCluster(cluster)
 ```{r}
 # best tuning parameter
 final_train.caret$bestTune
+
 #final model
 final_train.caret$finalModel
+
+# predictions
+predict(final_train.caret, final_test.df) -> final_caret.pred
 ```
+
+The AUC score for the tuned random forest model  is 0.8933556.
 
 
 ```{r}
-# predictions
-predict(final_train.caret, final_test.df) -> final_caret.pred
+# AUC plot
+# NOTE: must convert values to numeric to use function
+performance(
+  ROCR::prediction( as.numeric(final_caret.pred), 
+              as.numeric(final_test.df$y)
+              ),
+  measure = "tpr",
+  x.measure = "fpr"
+) -> final_caret.perf 
+plot(final_caret.perf)
+
+# AUC value
+print("AUC Value for this model is ")
+performance(
+  ROCR::prediction( as.numeric(final_caret.pred),
+              as.numeric(final_test.df$y) ),
+  measure = "auc",
+  )@y.values[[1]] 
 
 ```
 
+
+
+Per the confusion matrix, the tuned random forest model yielded 2,201 false negatives and 802 false positives, for a total cost of \$1,108,520. Specifity is 0.9581, which implies that it is correctly classifying the negative class 95.81% of the time.
 
 ```{r}
 # confusion matrix
@@ -643,15 +619,7 @@ caret::confusionMatrix(
 
 **Variable Importance & Impurity**
 
-
-```{r}
-
-# bare bones importance plot
-# unfortunatley ranger objects do not work for varImpPlot
-plot(varImp(final_train.caret), main = "Variable Importance")
-
-```
-
+The variable importance plot for the tuned random forest model shows that the top ___ most important variables are: 
 
 ```{r}
 
@@ -674,25 +642,23 @@ ggplot(final_caret_imp.df, aes(x=reorder(x_label,x_value), y=x_value,fill=x_valu
 ```
 
 
-## Model 4: Forward Feed Neural Network
+## Model 4: Forward Feed Neural Network (FFNN)
 
-
-
-**Runtime: 2 minutes**
 
 
 ```{r}
 
-############################
-### FULL MODEL: ALL VARIABLES
-############################
-
+#################################
+### FULL MODEL: ALL VARIABLES ###
+#################################
 
 # cluster preparation for parallel CPU
 library(parallel)
 library(doParallel)
 cluster <- makeCluster(detectCores() - 1) # leave 1 core for OS
 registerDoParallel(cluster)
+
+ptm <- proc.time()
 
 # training grid
 nn.grid <- expand.grid(size = c(8,8), decay = c(0.05))
@@ -708,7 +674,6 @@ trainControl(
   ) -> full_nnet.grid
 
 
-
 ### NOTE: the standard formula syntax of "y ~ ." is not accepted in the neuralnet() function 
 ## Must first create formula object then pass it to neuralnet() function
 
@@ -716,7 +681,7 @@ train_names <- names(final_train.df)
 train_formula_nn <- as.formula(paste("y ~", paste(train_names[!train_names %in% "y"], collapse = " + ")))
 
 # training NNET model
-train(train_formula,
+train(train_formula_nn,
   data = final_train.df,
   method = "nnet",
   metric = "Spec",  # "Accuracy",  # "ROC", 
@@ -726,12 +691,11 @@ train(train_formula,
   tuneGrid = nn.grid
 ) -> full_train.nnet
 
+proc.time() - ptm
 
 ### SHUTDOWN CLUSTER
 stopCluster(cluster)
 #registerDoSEQ()
-
-
 
 ```
 
@@ -746,15 +710,12 @@ predict(full_train.nnet, final_test.df) -> full_nnet.pred
 ```
 
 
-
 **AUC and RMSE**
 
 Not quite as good as untuned Random Forest
  
 [1] "AUC Value for this model is "
-[1] 0.8599844
-[1] "RMSE Value for this model is "
-[1] 0.3652111
+[1] 0.8326069
 
 
 ```{r}
@@ -779,37 +740,11 @@ performance(
     ),
   measure = "auc",
   )@y.values[[1]] 
-
-# RMSE
-print("RMSE Value for this model is ")
-RMSE( as.numeric(full_nnet.pred), as.numeric(final_test.df$y) )
 ```
 
 
 
-
-**Confusion Matrix**
-
-Somewhat less performant than untuned Random Forest
-
-          Reference
-Prediction     1     0
-         1 10610  2039
-         0  2229 17121
-                                          
-Accuracy : 0.8666   
-Sensitivity : 0.8264          
-Specificity : 0.8936  
-
-
-False Positive costs = $10 * 2229
-False Negative costs = $500 * 2039
-
-**TOTAL: $1,041,790**
-
-
-
-
+Per the confusion matrix, the FFNN model yielded 2,614 false negatives and 2,663 false positives, for a total cost of \$1,333,630.
 
 ```{r}
 # confusion matrix
@@ -821,39 +756,16 @@ caret::confusionMatrix(
 
 
 
+## Model 5: Forward Feed Neural Net - Important Variables
 
 
-###Model: Forward Feed Neural Net - Important Paremeters
-
-
-Given the output of our random forest model, we will limit to variables found to have the highest importance, as per the earlier plot above:
-
-x23
-x49
-x20
-x48
-x42
-x37
-x12
-x40
-x27
-x6
-x2
-x28
-x41
-x38
-x7
-x46
-x32
-
-**Runtime: 2 minutes**
-
+For this variation of the FFNN model we used only the most important variables as per the `ranger` random forest model.
 
 ```{r}
 
-############################
-### IMPORTANT VARIABLES FROM RANGER
-############################
+###############################################
+### FFNN w/IMPORTANT VARIABLES FROM RANGER ###
+##############################################
 
 
 # cluster preparation for parallel CPU
@@ -861,6 +773,8 @@ library(parallel)
 library(doParallel)
 cluster <- makeCluster(detectCores() - 1) # leave 1 core for OS
 registerDoParallel(cluster)
+
+ptm <- proc.time()
 
 # training grid
 nn.grid <- expand.grid(size = c(7,7), decay = c(0.01))
@@ -889,6 +803,7 @@ train(train_formula,
   tuneGrid = nn.grid
 ) -> final_train.nnet
 
+proc.time() - ptm
 
 ### SHUTDOWN CLUSTER
 stopCluster(cluster)
@@ -897,29 +812,12 @@ stopCluster(cluster)
 ```
 
 
-
-
-
-### Evaluating model with test predictions
+The AUC score for the FFNN model with important variables is 0.8469703.
 
 ```{r}
-# predictions
+# evaluate model with test predictions
 predict(final_train.nnet, final_test.df) -> final_nnet.pred
-```
 
-
-
-**AUC and RMSE**
-
-Not quite as good as untuned Random Forest
- 
-[1] "AUC Value for this model is "
-[1] 0.8451208
-[1] "RMSE Value for this model is "
-[1] 0.3851196
-
-
-```{r}
 # AUC plot
 # NOTE: must convert values to numeric to use function
 performance(
@@ -942,36 +840,11 @@ performance(
   measure = "auc",
   )@y.values[[1]] 
 
-# RMSE
-print("RMSE Value for this model is ")
-RMSE( as.numeric(final_nnet.pred), as.numeric(final_test.df$y) )
 ```
 
 
 
-
-**Confusion Matrix**
-
-Somewhat less performant than untuned Random Forest
-
-Confusion Matrix and Statistics
-
-          Reference
-Prediction     1     0
-         1 10109  1937
-         0  2730 17223
-                                         
-Accuracy : 0.8542 
-Sensitivity : 0.7874         
-Specificity : 0.8989
-
-
-
-False Positive costs = $10 * 2730
-False Negative costs = $500 * 1937
-
-**TOTAL: $995,800**
-
+Per the confusion matrix, the FFNN model using the most important variables yielded 2,529 false negatives and 2,090 false positives, for a total cost of \$1,285,400, which is a $48,200 improvement over the full FFNN model.
 
 ```{r}
 # confusion matrix
@@ -982,6 +855,20 @@ caret::confusionMatrix(
 ```
 
 
+## Conclusion
+
+The out-of-the box random forest model performed the best in terms of AUC score and was the most cost efficient of the five models. Additionally, the time to train this model is approximately 10 minutes, which is slightly slower than the logistic regression model (5.38 seconds); however, the cost savings far outweigh the additional training time evdn when compared to the rest of the models, depending on how often the model is expected to be updated and re-trained. 
+
+
+Table 1: Model Performance
+
+|         Model         |      AUC Score    | Training Time (in seconds)  | Total Cost ($USD)   | 
+|:--------------------: | :----------------:| :--------------------------:| :------------------:|
+| Logistic Regression	  |         0.7608    |             5.38            |      3,067,500      |
+| Random Forest	        |         0.9205    |           592.98            |        757,500      |
+| Random Forest (tuned) |         0.8934    |          1937.16            |      1,100,500      |
+| FFNN (full model)	    |         0.8287    |           258.48            |      1,307,000      |
+| FFNN (reduced model)	|         0.8470    |           100.68            |      1,264,500      |
 
 
 
@@ -990,9 +877,15 @@ caret::confusionMatrix(
 
 
 
-## References
 
-[1] C. Shalizi. Lecture Notes. Chapter 12, Logistic Regression. https://www.stat.cmu.edu/~cshalizi/uADA/12/lectures/ch12.pdf
+
+
+
+
+
+
+
+
 
 
 
