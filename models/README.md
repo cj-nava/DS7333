@@ -1,5 +1,7 @@
 ## Model Files
   
+NOTE: for html files be sure to append "http://htmlpreview.github.io/?" in front of the **raw** html file  
+  
 **Unit 2 - Case Study 1: Location Data**  
 A monstrous data cleaning of location based WiFi data, then using clustering for RF location tracking
   
